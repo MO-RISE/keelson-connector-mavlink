@@ -1,0 +1,16 @@
+version: '3'
+services:
+
+  keelson-connector-mavlink:
+    build: .
+    # image: ghcr.io/mo-rise/keelson-connector-mavlink:latest (To be used when not developing)
+    container_name: keelson-connector-mavlink
+    restart: unless-stopped
+    network_mode: "host"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - KEELSON_REALM=rise
+      - KEELSON_ENTITY_ID=masslab
+      - KEELSON_INTERFACE_TYPE=mavlink
+      - KEELSON_INTERFACE_ID=test

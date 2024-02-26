@@ -1,0 +1,4 @@
+eclipse-zenoh==0.10.1rc0
+environs==10.3.0
+pymavlink==2.4.41
+git+https://github.com/MO-RISE/keelson.git@0.1.0-pre.15#subdirectory=brefv/python
