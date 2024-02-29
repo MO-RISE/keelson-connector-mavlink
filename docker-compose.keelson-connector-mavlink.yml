@@ -9,8 +9,7 @@ services:
     network_mode: "host"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    environment:
-      - KEELSON_REALM=rise
-      - KEELSON_ENTITY_ID=masslab
-      - KEELSON_INTERFACE_TYPE=mavlink
-      - KEELSON_INTERFACE_ID=test
+    command: 
+      [
+        "python3 mavlink -r ${RELAM_ID} -kv 0 -e entity_id"
+      ]

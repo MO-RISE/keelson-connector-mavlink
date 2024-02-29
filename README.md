@@ -20,3 +20,13 @@ python3 -m venv env
 source venv/bin/activate
 pip install -r requirements_dev.txt
 ```
+
+To generate from proto use [protoc generator](https://pypi.org/project/protoc-wheel-0/)
+
+
+
+RC model config 
+
+Rudder 
+0 = Port rudder
+1 = Starboard rudder
