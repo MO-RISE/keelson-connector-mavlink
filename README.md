@@ -30,3 +30,13 @@ RC model config
 Rudder 
 0 = Port rudder
 1 = Starboard rudder
+
+
+
+
+zenoh info
+
+zenoh network
+
+Start command 
+python bin/main.py -r rise -e masslab -di dev --log-level 10 

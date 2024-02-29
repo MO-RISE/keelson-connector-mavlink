@@ -16,43 +16,52 @@ from utils import translate
 
 from keelson.payloads.TimestampedFloat_pb2 import TimestampedFloat
 
-connection_string = "/dev/ttyACM0"
-vehicle = boat.Boat(connection_string=connection_string, baud=57600)
-vehicle.connect()
-vehicle.wait_for_heartbeat()
-
-
 
 def query_set_rudder_prc(query):
-    logging.debug(f">> [Queryable ] Received Query '{query.selector}'")
-    parameters = query.decode_parameters()
+    key_exp = str(query.selector)
+    rudder_id = key_exp.split("/")[5]
+    logging.debug(f">> [Queryable Rudder] Received Query '{query.selector}' for rudder {rudder_id}")
+        
     values = query.value
-    logging.debug(f">> [Queryable ] Received values '{values}'")
-    logging.debug(f">> [Queryable ] Received Query '{parameters}'")
+    received_at, enclosed_at, content = keelson.uncover(values.payload)
+
+    if rudder_id == "*": # Rudder combined 
+        rudder_input = TimestampedFloat.FromString(content)
+        logging.debug(f">> [Queryable Rudder] COMBI rudder angle in degrees '{rudder_input}'")
+        # TODO: Chane to procentage in fronted (current degrees)
+        
+    elif rudder_id == "0": # Port rudder
+        rudder_input = TimestampedFloat.FromString(content)
+        logging.debug(f">> [Queryable Rudder] PORT rudder angle in degrees '{rudder_input}'")
+
+    elif rudder_id == "0": # Starboard rudder
+        rudder_input = TimestampedFloat.FromString(content)
+        logging.debug(f">> [Queryable Rudder] STARBOARD rudder angle in degrees '{rudder_input}'")
+
+
 
 
 def query_set_engine_prc(query):
-    logging.debug(f">> [Queryable ] Received Query '{query.selector}'")
+    logging.debug(f">> [Queryable Engine] Received Query '{query.selector}'")
     parameters = query.decode_parameters()
     values = query.value
-    logging.debug(f">> [Queryable ] Received values '{values}'")
-    logging.debug(f">> [Queryable ] Received Query '{parameters}'")
+    logging.debug(f">> [Queryable Engine] Received values '{values}'")
+    logging.debug(f">> [Queryable Engine] Received Query '{parameters}'")
 
 
 def query_set_thruster_prc(query):
-    logging.debug(f">> [Queryable ] Received Query '{query.selector}'")
+    logging.debug(f">> [Queryable Thruster] Received Query '{query.selector}'")
     parameters = query.decode_parameters()
     values = query.value
-    logging.debug(f">> [Queryable ] Received values '{values}'")
-    logging.debug(f">> [Queryable ] Received Query '{parameters}'")
-
-
-
+    logging.debug(f">> [Queryable Thruster] Received values '{values}'")
+    logging.debug(f">> [Queryable Thruster] Received Query '{parameters}'")
 
 
 def query_set_rudder_sub(data: zenoh.Sample):
+    logging.debug(f">> [Queryable ] Received Query '{data}'")
+
     # unpack brefv
-    res = brefv.uncover(data.payload)
+    res = keelson.uncover(data.payload)
 
     # create base payload, so we can add the actual values from the received brefv payload
     payload = TimestampedFloat()
@@ -63,14 +72,13 @@ def query_set_rudder_sub(data: zenoh.Sample):
     # the rc channel
 
     steering_value = int(translate(int(payload.value), 1, 99, 1200, 1800))
-    vehicle.set_steering(steering_value)
+    # vehicle.set_steering(steering_value)
 
 
 """
 Arguments: and configurations are set in docker-compose.yml
 """
 if __name__ == "__main__":
-
     # Input arguments and configurations
     parser = argparse.ArgumentParser(
         prog="mavlink",
@@ -103,10 +111,15 @@ if __name__ == "__main__":
         required=True,
         help="Unique id for a entity to connect",
     )
+    parser.add_argument(
+        "-di",
+        "--device-id",
+        type=str,
+        required=True,
+        help="Connection device string for MAVLink Ex. /dev/ttyACM0",
+    )
     ## Parse arguments and start doing our thing
     args = parser.parse_args()
-
-
 
     # Setup logger
     logging.basicConfig(
@@ -125,68 +138,109 @@ if __name__ == "__main__":
 
     def _on_exit():
         session.close()
+
     atexit.register(_on_exit)
     logging.info(f"Zenoh session: {session.info()}")
 
+    # try:
+    #     # Connect to flight controller
+    #     # connection_string = "/dev/ttyACM0"
+    #     vehicle = boat.Boat(connection_string=args.device_id, baud=57600)
+    #     vehicle.connect()
+    #     vehicle.wait_for_heartbeat()
+    # except Exception as e:
+    #     logging.error("Error connecting to flight controller: %s", e)
 
     # Keelson setup queryable and subscriber
     try:
-        key_base = args.realm + "/" + args.keelson_version + "/" + args.entity_id
-       
-        logging.info("Base key: %s", key_base)
+        key_pub_sub = keelson.construct_pub_sub_key(
+            realm=args.realm,
+            entity_id=args.entity_id,
+            subject="subject",
+            source_id="rc_boat",
+        )
 
+        key_req_rep = keelson.construct_req_rep_key(
+            realm=args.realm,
+            entity_id=args.entity_id,
+            responder_id="rc_boat",
+            procedure="mavlink",
+        )
+
+        logging.info("Base key_pub_sub: %s", key_pub_sub)
+        logging.info("Base key_req_rep: %s", key_req_rep)
 
         # Set RUDDER
-        queryable_set_rudder_0 = session.declare_queryable(
-            key_base + "/set_rudder_angle_percentage/rudder/0", query_set_rudder_prc, False
-        )        
-        queryable_set_rudder_1 = session.declare_queryable(
-            key_base + "/set_rudder_angle_percentage/rudder/1", query_set_rudder_prc, False
+        key_exp_set_rudder = keelson.construct_req_rep_key(
+            realm=args.realm,
+            entity_id=args.entity_id,
+            responder_id="rudder/*",
+            procedure="set_rudder_angle_pct",
         )
-        queryable_set_rudder_0_and_1 = session.declare_queryable(
-            key_base + "/set_rudder_angle_percentage/rudder/combined", query_set_rudder_prc, False
+        logging.info(f"Setting up queryable: {key_exp_set_rudder}")
+
+        queryable_set_rudder_angle = session.declare_queryable(
+            key_exp_set_rudder, query_set_rudder_prc, False
         )
-        queryable_set_rudder_sub_0_and_1 = session.declare_queryable(
-            key_base + "/set_rudder_listener_key/rudder/combined", query_set_rudder_sub, False
+
+        queryable_set_listener_rudder = session.declare_queryable(
+            keelson.construct_req_rep_key(
+                realm=args.realm,
+                entity_id=args.entity_id,
+                responder_id="rudder/*",
+                procedure="set_rudder_listener_key",
+            ),
+            query_set_rudder_sub,
+            False,
         )
 
         # Set ENGINE
         queryable_set_engine_0 = session.declare_queryable(
-            key_base + "/set_engine_power_percentage/engine/0", query_set_engine_prc, False
-        )        
+            key_req_rep + "/set_engine_power_percentage/engine/0",
+            query_set_engine_prc,
+            False,
+        )
         queryable_set_engine_1 = session.declare_queryable(
-            key_base + "/set_engine_power_percentage/engine/1", query_set_engine_prc, False
+            key_req_rep + "/set_engine_power_percentage/engine/1",
+            query_set_engine_prc,
+            False,
         )
         queryable_set_engine_0_and_1 = session.declare_queryable(
-            key_base + "/set_engine_power_percentage/engine/combined", query_set_engine_prc, False
+            key_req_rep + "/set_engine_power_percentage/engine/combined",
+            query_set_engine_prc,
+            False,
         )
 
-        # Set BOW THRUSTERS 
+        # Set BOW THRUSTERS
         queryable_set_engine_0 = session.declare_queryable(
-            key_base + "/set_thruster_power_percentage/thruster/0", query_set_rudder_prc, False
-        )        
+            key_req_rep + "/set_thruster_power_percentage/thruster/0",
+            query_set_rudder_prc,
+            False,
+        )
         queryable_set_engine_1 = session.declare_queryable(
-            key_base + "/set_thruster_power_percentage/thruster/1", query_set_rudder_prc, False
+            key_req_rep + "/set_thruster_power_percentage/thruster/1",
+            query_set_rudder_prc,
+            False,
         )
         queryable_set_engine_0_and_1 = session.declare_queryable(
-            key_base + "/set_thruster_power_percentage/thruster/combined", query_set_rudder_prc, False
+            key_req_rep + "/set_thruster_power_percentage/thruster/combined",
+            query_set_rudder_prc,
+            False,
         )
-        
+
         # Set GENERAL SYSTEMS
         queryable_set_state_of_propulsion_system = session.declare_queryable(
-            key_base + "/set_state_of_propulsion_system", query_set_rudder_prc, False
+            key_req_rep + "/set_state_of_propulsion_system", query_set_rudder_prc, False
         )
 
-        query_engine = session.declare_queryable(
-            key_base + "/engine/0", query_engine_callback, False
+        # Setting default subscribers
+        # logging.info(f"Sub to:{ key_base + "/lever_position_pct/arduino/right/azimuth/vertical"}")
+        sub_rudder = session.declare_subscriber(
+            key_pub_sub + "/lever_position_pct/arduino/right/azimuth/vertical",
+            query_set_rudder_sub,
         )
 
-        subable = session.declare_subscriber(
-            "rise/masslab/haddock/masslab-5/lever_position_pct/arduino/right/azimuth/vertical",
-            sub_callback,
-        )
-
-        # puub = session.declare_publisher(key_base+"/pub1")
+        # pub = session.declare_publisher(key_base+"/pub1")
 
         while True:
             time.sleep(1)
