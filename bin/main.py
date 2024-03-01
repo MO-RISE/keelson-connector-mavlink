@@ -194,8 +194,13 @@ if __name__ == "__main__":
     # CONNECT TO MAVLINK supported FLIGHT CONTROLLER
     try:
         vehicle = boat.Boat(connection_string=args.device_id, baud=57600)
-        vehicle.connect()
-        vehicle.wait_for_heartbeat()
+        # vehicle.connect() # no longer needed as the boat connects automatically now
+        vehicle.wait_for_heartbeat() # blocking
+
+        if not vehicle.heart_beat_received:
+            raise TimeoutError("Timed out waiting for heartbeat from FlightController")
+
+
     except Exception as e:
         logging.error("Error connecting to flight controller: %s", e)
 

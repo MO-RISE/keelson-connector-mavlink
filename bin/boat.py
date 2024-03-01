@@ -1,6 +1,5 @@
 import datetime
 import time
-
 import attribute
 from pymavlink import mavutil
 from enum import Enum
@@ -24,7 +23,6 @@ class Boat:
         self.__connected = False
         self.__heartbeat_received = False
         self.__allow_rc_override = True
-
         self.connect()
         self.__status: Status = Status.ARMED if self.is_armed() else Status.DISARMED
 
@@ -35,6 +33,10 @@ class Boat:
             command_type, confirmation,
             params[0], params[1], params[2], params[3], params[4], params[5], params[6]
         )
+
+    @property
+    def heart_beat_received(self):
+        return self.__heartbeat_received
 
     @property
     def allow_rc_override(self):
