@@ -243,26 +243,26 @@ class Boat:
         else:
             print("Overriding RC channels currently disabled ")
 
-    def check_rc_channel_for_override(self):
-        """
-        Continuously check the state of RC11 to determine if overrides are allowed.
-        """
-        while True:
-            rc_channels_msg = self.__vehicle.recv_match(type='RC_CHANNELS', blocking=False)
-            if rc_channels_msg:
-                # Assuming RC11 is at index 10 (channels are 1-indexed in MAVLink, but 0-indexed in pymavlink arrays)
-                rc11_value = rc_channels_msg.chan11_raw
-
-                # Assuming a threshold value to determine if the switch is high (e.g., > 1500)
-                allow_override = rc11_value > 1500
-                self.set_allow_override_rc(True)
-
-                if self.__allow_rc_override:
-                    print("Override allowed based on RC11")
-                else:
-                    print("Override not allowed based on RC11")
-
-            time.sleep(0.1)
+    # def check_rc_channel_for_override(self):
+    #     """
+    #     Continuously check the state of RC11 to determine if overrides are allowed.
+    #     """
+    #     while True:
+    #         rc_channels_msg = self.__vehicle.recv_match(type='RC_CHANNELS', blocking=False)
+    #         if rc_channels_msg:
+    #             # Assuming RC11 is at index 10 (channels are 1-indexed in MAVLink, but 0-indexed in pymavlink arrays)
+    #             rc11_value = rc_channels_msg.chan11_raw
+    #
+    #             # Assuming a threshold value to determine if the switch is high (e.g., > 1500)
+    #             allow_override = rc11_value > 1500
+    #             self.set_allow_override_rc(True)
+    #
+    #             if self.__allow_rc_override:
+    #                 print("Override allowed based on RC11")
+    #             else:
+    #                 print("Override not allowed based on RC11")
+    #
+    #         time.sleep(0.1)
 
 
 # example usage below
