@@ -38,5 +38,9 @@ zenoh info
 
 zenoh network
 
-Start command 
+
+## Start command example  
+
+```
 python bin/main.py -r rise -e masslab -di dev --log-level 10 
+```

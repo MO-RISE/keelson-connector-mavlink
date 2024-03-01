@@ -17,47 +17,96 @@ from utils import translate
 from keelson.payloads.TimestampedFloat_pb2 import TimestampedFloat
 
 
+global vehicle
+
 def query_set_rudder_prc(query):
+    '''
+    Set rudder angle in percentage with query either for combined, port or starboard rudder
+
+    '''
     key_exp = str(query.selector)
     rudder_id = key_exp.split("/")[5]
     logging.debug(f">> [Queryable Rudder] Received Query '{query.selector}' for rudder {rudder_id}")
         
     values = query.value
     received_at, enclosed_at, content = keelson.uncover(values.payload)
+    rudder_input = TimestampedFloat.FromString(content)
 
     if rudder_id == "*": # Rudder combined 
-        rudder_input = TimestampedFloat.FromString(content)
-        logging.debug(f">> [Queryable Rudder] COMBI rudder angle in degrees '{rudder_input}'")
-        # TODO: Chane to procentage in fronted (current degrees)
+        logging.debug(f">> [Queryable Rudder] COMBI rudder angle in percentage-100 port 100 starboard '{rudder_input}'")
+        # TODO: Implement rudder control forwarding to MAVlink 
         
     elif rudder_id == "0": # Port rudder
-        rudder_input = TimestampedFloat.FromString(content)
-        logging.debug(f">> [Queryable Rudder] PORT rudder angle in degrees '{rudder_input}'")
+        logging.debug(f">> [Queryable Rudder] PORT rudder angle in percentage -100 port 100 starboard  '{rudder_input}'")
+        # TODO: Implement rudder control forwarding to MAVlink 
 
     elif rudder_id == "0": # Starboard rudder
-        rudder_input = TimestampedFloat.FromString(content)
-        logging.debug(f">> [Queryable Rudder] STARBOARD rudder angle in degrees '{rudder_input}'")
-
+        logging.debug(f">> [Queryable Rudder] STARBOARD rudder angle in percentage -100 port 100 starboard '{rudder_input}'")
+        # TODO: Implement rudder control forwarding to MAVlink 
+    
+    # TODO: Respond with actual set value
+    query.respond(zenoh.StatusCode.OK, None)
 
 
 
 def query_set_engine_prc(query):
-    logging.debug(f">> [Queryable Engine] Received Query '{query.selector}'")
-    parameters = query.decode_parameters()
+    '''
+    Set engine power in percentage with query either for combined, port or starboard engine
+    '''
+    key_exp = str(query.selector)
+    engine_id = key_exp.split("/")[5]
+    logging.debug(f">> [Queryable ENGINE] Received Query '{query.selector}' for engine {engine_id}")
+        
     values = query.value
-    logging.debug(f">> [Queryable Engine] Received values '{values}'")
-    logging.debug(f">> [Queryable Engine] Received Query '{parameters}'")
+    received_at, enclosed_at, content = keelson.uncover(values.payload)
+    engine_input = TimestampedFloat.FromString(content)
+
+    if engine_id == "*": # Engine combined 
+        logging.debug(f">> [Queryable ENGINE] COMBINED power in percentage -100 astern 100 ahead '{engine_input}'")
+        # TODO: Implement control forwarding to MAVlink 
+        
+    elif engine_id == "0": # Port 
+        logging.debug(f">> [Queryable ENGINE] PORT power in percentage -100 astern 100 ahead '{engine_input}'")
+        # TODO: Implement control forwarding to MAVlink 
+
+    elif engine_id == "0": # Starboard 
+        logging.debug(f">> [Queryable ENGINE] STARBOARD power in percentage -100 astern 100 ahead '{engine_input}'")
+        # TODO: Implement control forwarding to MAVlink
+
+    # TODO: Respond with actual set value     
+    query.respond(zenoh.StatusCode.OK, None)
+
 
 
 def query_set_thruster_prc(query):
-    logging.debug(f">> [Queryable Thruster] Received Query '{query.selector}'")
-    parameters = query.decode_parameters()
+    '''
+    Set thruster power in percentage with query either for combined, bow or stern 
+    '''
+    key_exp = str(query.selector)
+    thruster_id = key_exp.split("/")[5]
+    logging.debug(f">> [Queryable THRUSTER] Received Query '{query.selector}' for thruster {thruster_id}")
+        
     values = query.value
-    logging.debug(f">> [Queryable Thruster] Received values '{values}'")
-    logging.debug(f">> [Queryable Thruster] Received Query '{parameters}'")
+    received_at, enclosed_at, content = keelson.uncover(values.payload)
+    thruster_input = TimestampedFloat.FromString(content)
+
+    if thruster_id == "*": # Combined 
+        logging.debug(f">> [Queryable THRUSTER] COMBINED power in percentage -100 moving vessel to port to 100 moving vessel to starboard '{thruster_input}'")
+        # TODO: Implement control forwarding to MAVlink 
+        
+    elif thruster_id == "0": # Bow 
+        logging.debug(f">> [Queryable THRUSTER] BOW power in percentage -100 moving vessel to port to 100 moving vessel to starboard '{thruster_input}'")
+        # TODO: Implement control forwarding to MAVlink 
+
+    elif thruster_id == "0": # Stern 
+        logging.debug(f">> [Queryable THRUSTER] STERN power in percentage -100 moving vessel to port to 100 moving vessel to starboard '{thruster_input}'")
+        # TODO: Implement control forwarding to MAVlink
+
+    # TODO: Respond with actual set value     
+    query.respond(zenoh.StatusCode.OK, None)
 
 
-def query_set_rudder_sub(data: zenoh.Sample):
+def query_set_rudder_listener(data: zenoh.Sample):
     logging.debug(f">> [Queryable ] Received Query '{data}'")
 
     # unpack brefv
@@ -84,7 +133,6 @@ if __name__ == "__main__":
         prog="mavlink",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-
     parser.add_argument(
         "--log-level",
         type=int,
@@ -142,35 +190,22 @@ if __name__ == "__main__":
     atexit.register(_on_exit)
     logging.info(f"Zenoh session: {session.info()}")
 
-    # try:
-    #     # Connect to flight controller
-    #     # connection_string = "/dev/ttyACM0"
-    #     vehicle = boat.Boat(connection_string=args.device_id, baud=57600)
-    #     vehicle.connect()
-    #     vehicle.wait_for_heartbeat()
-    # except Exception as e:
-    #     logging.error("Error connecting to flight controller: %s", e)
+
+    # CONNECT TO MAVLINK supported FLIGHT CONTROLLER
+    try:
+        vehicle = boat.Boat(connection_string=args.device_id, baud=57600)
+        vehicle.connect()
+        vehicle.wait_for_heartbeat()
+    except Exception as e:
+        logging.error("Error connecting to flight controller: %s", e)
+
 
     # Keelson setup queryable and subscriber
     try:
-        key_pub_sub = keelson.construct_pub_sub_key(
-            realm=args.realm,
-            entity_id=args.entity_id,
-            subject="subject",
-            source_id="rc_boat",
-        )
 
-        key_req_rep = keelson.construct_req_rep_key(
-            realm=args.realm,
-            entity_id=args.entity_id,
-            responder_id="rc_boat",
-            procedure="mavlink",
-        )
+        ### RUDDER ###
 
-        logging.info("Base key_pub_sub: %s", key_pub_sub)
-        logging.info("Base key_req_rep: %s", key_req_rep)
-
-        # Set RUDDER
+        # SET  ANGLE QUERYABLE   
         key_exp_set_rudder = keelson.construct_req_rep_key(
             realm=args.realm,
             entity_id=args.entity_id,
@@ -183,18 +218,25 @@ if __name__ == "__main__":
             key_exp_set_rudder, query_set_rudder_prc, False
         )
 
-        queryable_set_listener_rudder = session.declare_queryable(
-            keelson.construct_req_rep_key(
+        # SET RUDDER LISTENER QUERYABLE
+        key_exp_lister_rudder =  keelson.construct_req_rep_key(
                 realm=args.realm,
                 entity_id=args.entity_id,
                 responder_id="rudder/*",
                 procedure="set_rudder_listener_key",
-            ),
-            query_set_rudder_sub,
+            )
+        
+        logging.info(f"Setting up queryable: {key_exp_set_rudder}")
+        queryable_set_listener_rudder = session.declare_queryable(
+            key_exp_lister_rudder,
+            query_set_rudder_listener,
             False,
         )
 
-        # Set ENGINE
+         ### ENGINE ###
+
+
+        # Set 
         queryable_set_engine_0 = session.declare_queryable(
             key_req_rep + "/set_engine_power_percentage/engine/0",
             query_set_engine_prc,
@@ -237,7 +279,7 @@ if __name__ == "__main__":
         # logging.info(f"Sub to:{ key_base + "/lever_position_pct/arduino/right/azimuth/vertical"}")
         sub_rudder = session.declare_subscriber(
             key_pub_sub + "/lever_position_pct/arduino/right/azimuth/vertical",
-            query_set_rudder_sub,
+            query_set_rudder_listener,
         )
 
         # pub = session.declare_publisher(key_base+"/pub1")
