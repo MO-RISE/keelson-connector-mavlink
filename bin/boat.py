@@ -37,14 +37,14 @@ class Boat:
         )
 
     @property
-    def allow_override_rc(self):
+    def allow_rc_override(self):
         """
         Get the current state of whether RC override is allowed.
         """
         return self.__allow_rc_override
 
-    @allow_override_rc.setter
-    def allow_override_rc(self, should_allow):
+    @allow_rc_override.setter
+    def allow_rc_override(self, should_allow):
         """
         Set whether to allow RC override.
         """
