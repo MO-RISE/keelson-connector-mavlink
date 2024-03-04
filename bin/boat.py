@@ -6,9 +6,17 @@ from enum import Enum
 
 
 class Status(Enum):
+    UNDEFINED = -1
     ARMED = 1
     DISARMED = 2
     EMERGENCY = 3
+
+
+class ControlAuthority(Enum):
+    UNDEFINED = -1
+    MANUAL = 1
+    REMOTE = 2
+    AUTOMATIC = 3
 
 
 class Boat:
@@ -22,11 +30,39 @@ class Boat:
         self.__vehicle = None
         self.__connected = False
         self.__heartbeat_received = False
-        self.__allow_rc_override = True
-        self.connect()
-        self.__status: Status = Status.ARMED if self.is_armed() else Status.DISARMED
+        # self.__allow_rc_override = True ## temporarily disabled as we're using the controlauthority instead
+        self.__confirm_commands = False
 
-    def send_mavlink_long_cmd(self, command_type, params: list, confirmation=0):
+        self.__connect()
+
+        # we could make this more verbose
+        self.__status: Status = Status.ARMED if self.is_armed() else Status.UNDEFINED
+
+        self.__control_authority: ControlAuthority
+
+        current_flight_mode = self.get_flight_mode()
+
+        # we could use switch here, but then we lock ourselves to python 3.10+
+        if current_flight_mode == 0:
+            self.__control_authority = ControlAuthority.MANUAL
+
+        elif current_flight_mode == 1:
+            self.__control_authority = ControlAuthority.REMOTE
+
+        elif current_flight_mode == 2:
+            self.__control_authority = ControlAuthority.AUTOMATIC
+
+        else:
+            self.__control_authority = ControlAuthority.UNDEFINED
+
+
+    def __should_allow_rc_override(self):
+        """
+        Returns true if we should allow override, i.e. any mode above 0 in our currently defined modes
+        """
+        return self.__control_authority.value > 0
+
+    def __send_mavlink_long_cmd(self, command_type, params: list, confirmation=False):
         # type = mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM
         self.__vehicle.mav.command_long_send(
             self.__vehicle.target_system, self.__vehicle.target_component,
@@ -38,21 +74,21 @@ class Boat:
     def heart_beat_received(self):
         return self.__heartbeat_received
 
-    @property
-    def allow_rc_override(self):
-        """
-        Get the current state of whether RC override is allowed.
-        """
-        return self.__allow_rc_override
+    # @property
+    # def allow_rc_override(self):
+    #     """
+    #     Get the current state of whether RC override is allowed.
+    #     """
+    #     return self.__allow_rc_override
+    #
+    # @allow_rc_override.setter
+    # def allow_rc_override(self, should_allow):
+    #     """
+    #     Set whether to allow RC override.
+    #     """
+    #     self.__allow_rc_override = should_allow
 
-    @allow_rc_override.setter
-    def allow_rc_override(self, should_allow):
-        """
-        Set whether to allow RC override.
-        """
-        self.__allow_rc_override = should_allow
-
-    def connect(self):
+    def __connect(self):
         """
         Establish a MAVLink connection to the vehicle.
         """
@@ -209,7 +245,7 @@ class Boat:
             print("Vehicle not connected")
             return
 
-        if self.__allow_rc_override:
+        if self.__should_allow_rc_override():
             self.__vehicle.mav.rc_channels_override_send(
                 self.__vehicle.target_system,  # target_system
                 self.__vehicle.target_component,  # target_component
@@ -231,13 +267,13 @@ class Boat:
             print("Vehicle not connected")
             return
 
-        if self.__allow_rc_override:
+        if self.__should_allow_rc_override():
             self.__vehicle.mav.rc_channels_override_send(
                 self.__vehicle.target_system,  # target_system
                 self.__vehicle.target_component,  # target_component
-                throttle_value,
+                0,
                 throttle_value,  # RC channel 2 value - throttle in some configurations, not overridden here
-                throttle_value, throttle_value, throttle_value, throttle_value, throttle_value, throttle_value
+                0, 0, 0, 0, 0, 0
                 # Other RC channels not overridden
             )
             print(f"Throttle set to {throttle_value}")
@@ -245,26 +281,74 @@ class Boat:
         else:
             print("Overriding RC channels currently disabled ")
 
-    # def check_rc_channel_for_override(self):
-    #     """
-    #     Continuously check the state of RC11 to determine if overrides are allowed.
-    #     """
-    #     while True:
-    #         rc_channels_msg = self.__vehicle.recv_match(type='RC_CHANNELS', blocking=False)
-    #         if rc_channels_msg:
-    #             # Assuming RC11 is at index 10 (channels are 1-indexed in MAVLink, but 0-indexed in pymavlink arrays)
-    #             rc11_value = rc_channels_msg.chan11_raw
-    #
-    #             # Assuming a threshold value to determine if the switch is high (e.g., > 1500)
-    #             allow_override = rc11_value > 1500
-    #             self.set_allow_override_rc(True)
-    #
-    #             if self.__allow_rc_override:
-    #                 print("Override allowed based on RC11")
-    #             else:
-    #                 print("Override not allowed based on RC11")
-    #
-    #         time.sleep(0.1)
+    def set_throttle(self, throttle_left, throttle_right):
+        """
+        Set the steering of the boat by overriding the RC channel.
+        :param steering_value: The PWM value to set for the steering channel (usually between 1000 and 2000)
+        """
+
+        raise NotImplementedError()
+
+        if not self.__connected:
+            print("Vehicle not connected")
+            return
+
+        else:
+            print("Overriding RC channels currently disabled ")
+
+    def set_raw_servo(self, servo_number, pwm_value):
+        """
+        Set a raw servo output.
+
+        :param servo_number: The servo output number (e.g., 1 for SERVO1_OUTPUT).
+        :param pwm_value: The PWM value to set (usually between 1000 and 2000).
+        """
+        if not self.__connected:
+            print("Vehicle not connected")
+            return
+
+        # Ensure PWM value is within a safe range
+        pwm_value = max(1000, min(pwm_value, 2000))
+
+        # MAV_CMD_DO_SET_SERVO command
+        self.__vehicle.mav.command_long_send(
+            self.__vehicle.target_system,
+            self.__vehicle.target_component,
+            mavutil.mavlink.MAV_CMD_DO_SET_SERVO, 0,  # 0 for confirmation
+            servo_number,  # Servo number
+            pwm_value,  # PWM value
+            0, 0, 0, 0, 0  # Unused parameters
+        )
+
+        print(f"Set servo {servo_number} to PWM {pwm_value}")
+
+    def get_flight_mode(self):
+        """
+        Retrieve the current flight mode from the vehicle.
+
+        :return: The name of the current flight mode as a string.
+        """
+        # Fetch the latest heartbeat message
+        heartbeat = self.__vehicle.recv_match(type='HEARTBEAT', blocking=True, timeout=1)
+
+        if heartbeat:
+            mode_id = heartbeat.custom_mode
+            # apm_mode_mapping = {
+            #     0: 'MANUAL',
+            #     1: 'ACRO',
+            #     2: 'STEERING',
+            #     3: 'HOLD',
+            #     4: 'LOITER',
+            #     5: 'FOLLOW',
+            #     6: 'SIMPLE',
+            # }
+            # mode_name = apm_mode_mapping.get(mode_id, "UNKNOWN")
+
+            return mode_id
+
+        else:
+            print("No heartbeat message received.")
+            return None
 
 
 # example usage below
