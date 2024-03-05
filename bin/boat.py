@@ -1,6 +1,6 @@
 import datetime
 import time
-import attribute
+# import attribute
 from pymavlink import mavutil
 from enum import Enum
 
