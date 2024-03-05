@@ -1,12 +1,18 @@
+def map_value(x, in_min, in_max, out_min, out_max):
+    """
+    Maps a value x from one range [in_min, in_max] to another [out_min, out_max].
 
+    Parameters:
+    - x: The value to map.
+    - in_min: The lower bound of the input range.
+    - in_max: The upper bound of the input range.
+    - out_min: The lower bound of the output range.
+    - out_max: The upper bound of the output range.
 
-def translate(value, leftMin, leftMax, rightMin, rightMax):  # from stackoverflow
-    # Figure out how 'wide' each range is
-    leftSpan = leftMax - leftMin
-    rightSpan = rightMax - rightMin
-
-    # Convert the left range into a 0-1 range (float)
-    valueScaled = float(value - leftMin) / float(leftSpan)
-
-    # Convert the 0-1 range into a value in the right range.
-    return rightMin + (valueScaled * rightSpan)
+    Returns:
+    - The value mapped to the new range.
+    """
+    # First, subtract the minimum of the input range to translate x to start from 0,
+    # then scale the value to the proportion it represents in the input range.
+    # Finally, scale this proportion to the output range and translate it to start from out_min.
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
