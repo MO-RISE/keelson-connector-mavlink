@@ -43,4 +43,6 @@ zenoh network
 
 ```
 python bin/main.py -r rise -e masslab -di dev --log-level 10 
+
+python bin/main.py -r rise -e masslab -di dev --log-level 10 -sub start
 ```
