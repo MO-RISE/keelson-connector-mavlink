@@ -32,6 +32,8 @@ class Boat:
         self.__heartbeat_received = False
         # self.__allow_rc_override = True ## temporarily disabled as we're using the controlauthority instead
         self.__confirm_commands = False
+        self.__current_rudder_value = 1500
+        self.__current_throttle_value = 1500
 
         self.__connect()
 
@@ -55,6 +57,11 @@ class Boat:
         else:
             self.__control_authority = ControlAuthority.UNDEFINED
 
+        self.__control_authority = ControlAuthority.REMOTE
+
+
+    def get_vehicle(self):
+        return self.__vehicle
 
     def __should_allow_rc_override(self):
         """
@@ -236,7 +243,7 @@ class Boat:
         print("ENABLING PROPULSION")
         self.set_relay_on(1)
 
-    def set_steering(self, steering_value):
+    def set_steering(self, steering_value: int):
         """
         Set the steering of the boat by overriding the RC channel.
         :param steering_value: The PWM value to set for the steering channel (usually between 1000 and 2000)
@@ -244,14 +251,16 @@ class Boat:
         if not self.__connected:
             print("Vehicle not connected")
             return
+        
+        self.__current_rudder_value = int(steering_value)
 
         if self.__should_allow_rc_override():
             self.__vehicle.mav.rc_channels_override_send(
                 self.__vehicle.target_system,  # target_system
                 self.__vehicle.target_component,  # target_component
-                steering_value,  # RC channel 1 value - steering
-                0,  # RC channel 2 value - throttle in some configurations, not overridden here
-                0, 0, 0, 0, 0, 0  # Other RC channels not overridden
+                self.__current_rudder_value,  # RC channel 1 value - steering
+                self.__current_throttle_value,  # RC channel 2 value - throttle in some configurations, not overridden here
+                self.__current_throttle_value, 0, 0, 0, 0, 0  # Other RC channels not overridden
             )
             print(f"Steering set to {steering_value}")
 
@@ -266,14 +275,16 @@ class Boat:
         if not self.__connected:
             print("Vehicle not connected")
             return
+        
+        self.__current_throttle_value = int(throttle_value)
 
         if self.__should_allow_rc_override():
             self.__vehicle.mav.rc_channels_override_send(
                 self.__vehicle.target_system,  # target_system
                 self.__vehicle.target_component,  # target_component
-                0,
-                throttle_value,  # RC channel 2 value - throttle in some configurations, not overridden here
-                0, 0, 0, 0, 0, 0
+                self.__current_rudder_value ,
+                self.__current_throttle_value ,  # RC channel 2 value - throttle in some configurations, not overridden here
+                self.__current_throttle_value , 0, 0, 0, 0, 0
                 # Other RC channels not overridden
             )
             print(f"Throttle set to {throttle_value}")
@@ -281,7 +292,7 @@ class Boat:
         else:
             print("Overriding RC channels currently disabled ")
 
-    def set_throttle(self, throttle_left, throttle_right):
+    def set_throttle_differential(self, throttle_left, throttle_right):
         """
         Set the steering of the boat by overriding the RC channel.
         :param steering_value: The PWM value to set for the steering channel (usually between 1000 and 2000)
@@ -359,44 +370,46 @@ if __name__ == "__main__":
     # boat.connect()
     boat.wait_for_heartbeat()
 
-    boat.enable_propulsion()
-    time.sleep(1)
-    boat.arm_vehicle()
+    # boat.enable_propulsion()
+    # time.sleep(1)
+
+    # # time.sleep(1)
+    # boat.set_steering(1600)
+    # time.sleep(1)
+    # boat.set_steering(1500)
 
     # time.sleep(1)
-    boat.set_steering(1600)
-    time.sleep(1)
-    boat.set_steering(1500)
+    # boat.set_throttle(1800)
 
-    time.sleep(1)
-    boat.set_throttle(1800)
+    # time.sleep(2)
 
-    time.sleep(2)
+    while True:
 
+        msg = boat.get_vehicle().recv_msg()
+
+        if msg:
+
+            print(msg)
+
+        # attitude_msg = boat.vehicle.recv_match(type='ATTITUDE', blocking=True, timeout=0.1)
+        # gps_msg = boat.vehicle.recv_match(type='GPS_RAW_INT', blocking=True, timeout=0.1)
+        # battery_msg = boat.vehicle.recv_match(type='BATTERY_STATUS', blocking=True, timeout=0.1)
+        # vfr_hud_msg = boat.vehicle.recv_match(type='VFR_HUD', blocking=True, timeout=0.1)
+        # radio_status_msg = boat.vehicle.recv_match(type='RADIO_STATUS', blocking=True, timeout=0.1)
+        # date = datetime.datetime.now()
+        # timestamp = date.strftime('%H:%M:%S')
+        # if vfr_hud_msg:
+        #     print(f"[{timestamp}] Heading: {vfr_hud_msg.heading} degrees")
+        # if attitude_msg:
+        #     print(f"[{timestamp}] Pitch: {attitude_msg.pitch}, Roll: {attitude_msg.roll}, Yaw: {attitude_msg.yaw}")
+        # if gps_msg:
+        #     print(
+        #         f"[{timestamp}] GPS Lat: {gps_msg.lat / 1e7}, Lon: {gps_msg.lon / 1e7}, Alt: {gps_msg.alt / 1e3} meters")
+        # if battery_msg:
+        #     battery_voltage = battery_msg.voltages[0] / 1000.0  # Convert millivolts to volts
+        #     print(f"[{timestamp}] Battery Voltage: {battery_voltage}V")
+        # if radio_status_msg:
+        #     print(
+        #         f"[{timestamp}] Radio: RSSI {radio_status_msg.rssi}/255, Remote RSSI {radio_status_msg.remrssi}/255, Noise {radio_status_msg.noise}/255, Remote Noise {radio_status_msg.remnoise}/255, TX Buffer {radio_status_msg.txbuf}%")
+        time.sleep(0.1)
     boat.close_connection()
-
-    # while True:
-
-    # attitude_msg = boat.vehicle.recv_match(type='ATTITUDE', blocking=True, timeout=0.1)
-    # gps_msg = boat.vehicle.recv_match(type='GPS_RAW_INT', blocking=True, timeout=0.1)
-    # battery_msg = boat.vehicle.recv_match(type='BATTERY_STATUS', blocking=True, timeout=0.1)
-    # vfr_hud_msg = boat.vehicle.recv_match(type='VFR_HUD', blocking=True, timeout=0.1)
-    # radio_status_msg = boat.vehicle.recv_match(type='RADIO_STATUS', blocking=True, timeout=0.1)
-    # date = datetime.datetime.now()
-    # timestamp = date.strftime('%H:%M:%S')
-    # if vfr_hud_msg:
-    #     print(f"[{timestamp}] Heading: {vfr_hud_msg.heading} degrees")
-    # if attitude_msg:
-    #     print(f"[{timestamp}] Pitch: {attitude_msg.pitch}, Roll: {attitude_msg.roll}, Yaw: {attitude_msg.yaw}")
-    # if gps_msg:
-    #     print(
-    #         f"[{timestamp}] GPS Lat: {gps_msg.lat / 1e7}, Lon: {gps_msg.lon / 1e7}, Alt: {gps_msg.alt / 1e3} meters")
-    # if battery_msg:
-    #     battery_voltage = battery_msg.voltages[0] / 1000.0  # Convert millivolts to volts
-    #     print(f"[{timestamp}] Battery Voltage: {battery_voltage}V")
-    # if radio_status_msg:
-    #     print(
-    #         f"[{timestamp}] Radio: RSSI {radio_status_msg.rssi}/255, Remote RSSI {radio_status_msg.remrssi}/255, Noise {radio_status_msg.noise}/255, Remote Noise {radio_status_msg.remnoise}/255, TX Buffer {radio_status_msg.txbuf}%")
-    # time.sleep(1)
-
-    # boat.close_connection()

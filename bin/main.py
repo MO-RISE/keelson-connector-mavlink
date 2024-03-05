@@ -167,21 +167,29 @@ def query_set_rudder_listener(query):
 
 
 def subscriber_rudder(data):
-    logging.debug(f">> [Subscriber Rudder] Received '{data}'")
-
-    # unpack brefv
     res = keelson.uncover(data.payload)
 
     # create base payload, so we can add the actual values from the received brefv payload
     payload = TimestampedFloat()
     payload.ParseFromString(res[2])
-    print(payload.value)
+
+    logging.debug(f">> [Subscriber Rudder] Received value {payload.value}")
+    # map the 0-100 value from keelson steering thing to value that the ardupilot understands when we override
+    # the rc channel
+    vehicle.set_steering(map_value(payload.value, -99, 99, 1100, 1900))
+
+
+def subscriber_engine(data):
+    res = keelson.uncover(data.payload)
+    # create base payload, so we can add the actual values from the received brefv payload
+    payload = TimestampedFloat()
+    payload.ParseFromString(res[2])
+
+    logging.debug(f">> [Subscriber Engine] Received value {payload.value}")
 
     # map the 0-100 value from keelson steering thing to value that the ardupilot understands when we override
     # the rc channel
-    vehicle.set_steering(payload.value)
-
-
+    vehicle.set_throttle(map_value(payload.value, -99, 99, 1100, 1900))
 
 
 """
@@ -269,12 +277,24 @@ if __name__ == "__main__":
                 realm=args.realm,
                 entity_id=args.entity_id,
                 subject="lever_position_pct",
-                source_id="arduino/right/azimuth/vertical",
+                source_id="arduino/right/azimuth/horizontal/on_change",
             )
             logging.info(f"Setting up RUDDER subscriber: {key_exp_sub_rudder}")
             sub_rudder_listener = session.declare_subscriber(
                 key_exp_sub_rudder,
                 subscriber_rudder,
+            )
+
+            key_exp_sub_engine = keelson.construct_pub_sub_key(
+                realm=args.realm,
+                entity_id=args.entity_id,
+                subject="lever_position_pct",
+                source_id="arduino/right/azimuth/vertical/on_change",
+            )
+            logging.info(f"Setting up ENGIEN subscriber: {key_exp_sub_rudder}")
+            sub_engine_listener = session.declare_subscriber(
+                key_exp_sub_engine,
+                subscriber_engine,
             )
         #  sub_rudder_listner.undeclare()
 

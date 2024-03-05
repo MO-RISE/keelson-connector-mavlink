@@ -15,4 +15,4 @@ def map_value(x, in_min, in_max, out_min, out_max):
     # First, subtract the minimum of the input range to translate x to start from 0,
     # then scale the value to the proportion it represents in the input range.
     # Finally, scale this proportion to the output range and translate it to start from out_min.
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+    return int((x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min)
