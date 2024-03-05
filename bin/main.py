@@ -12,7 +12,7 @@ import time
 import keelson
 import boat
 
-from utils import translate
+from utils import map_value
 from terminal_inputs import terminal_inputs
 
 from keelson.payloads.TimestampedFloat_pb2 import TimestampedFloat
@@ -20,7 +20,7 @@ from keelson.payloads.TimestampedString_pb2 import TimestampedString
 
 
 vehicle = None
-sub_rudder_listner = None
+sub_rudder_listener = None
 session = None
 
 
@@ -137,7 +137,7 @@ def query_set_thruster_prc(query):
 
 
 def query_set_rudder_listener(query):
-    global sub_rudder_listner, session
+    global sub_rudder_listener, session
     logging.debug(f">> [Queryable Rudder] Received Query '{query}'")
 
     key_exp = str(query.selector)
@@ -152,14 +152,14 @@ def query_set_rudder_listener(query):
     if len(new_key) > 5:
         logging.debug(f"Setting up RUDDER subscriber: {new_key}")
 
-        sub_rudder_listner = session.declare_subscriber(
+        sub_rudder_listener = session.declare_subscriber(
             new_key,
             subscriber_rudder,
         )
     else:
         logging.debug(f"Undeclaring RUDDER subscriber: {new_key}")
         try:
-            sub_rudder_listner.undeclare()
+            sub_rudder_listener.undeclare()
         except Exception as e:
             logging.error(f"Error undeclaring sub_rudder_listner: {e}")
 
@@ -272,7 +272,7 @@ if __name__ == "__main__":
                 source_id="arduino/right/azimuth/vertical",
             )
             logging.info(f"Setting up RUDDER subscriber: {key_exp_sub_rudder}")
-            sub_rudder_listner = session.declare_subscriber(
+            sub_rudder_listener = session.declare_subscriber(
                 key_exp_sub_rudder,
                 subscriber_rudder,
             )
