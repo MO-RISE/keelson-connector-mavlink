@@ -1,9 +1,6 @@
-import datetime
 import time
-# import attribute
 from pymavlink import mavutil
 from enum import Enum
-from datetime import datetime
 
 
 class Status(Enum):
@@ -75,19 +72,30 @@ class Boat:
 
         return self.__control_authority.value > 0
 
+    def __keep_alive_rc_override(self):
+        self.__update_steering()
+
+    def check_rc_mode(self):
+        self.__poll_rc_mode_switch()
+
+        if self.__should_allow_rc_override():
+            self.__keep_alive_rc_override()
+
     def __poll_rc_mode_switch(self):
         """
         Poll the state of RC channel 11
         """
-        message = self.__vehicle.recv_match(type='RC_CHANNELS_RAW', blocking=True)
+        message = self.__vehicle.recv_match(type='RC_CHANNELS_RAW', blocking=True, timeout=1)
         if message:
             self.rc_channel_11_value = message.chan11_raw if hasattr(message, 'chan11_raw') else None
             if self.rc_channel_11_value is not None:
                 print(f"RC Channel 11 value: {self.rc_channel_11_value}")
                 if self.rc_channel_11_value > 1500:
                     self.__control_authority = ControlAuthority.REMOTE
+                    print("CONTROL AUTHORITY UPDATED TO REMOTE")
                 else:
                     self.__control_authority = ControlAuthority.MANUAL
+                    print("CONTROL AUTHORITY UPDATED TO MANUAL")
             else:
                 print("RC Channel 11 value not available in the message.")
 
@@ -123,10 +131,8 @@ class Boat:
         print("Waiting for vehicle heartbeat")
         if self.__vehicle.wait_heartbeat():
             self.__heartbeat_received = True
-            self.__connected = True # probably redundant
+            self.__connected = True  # probably redundant
             print("Heartbeat received")
-
-
 
     def arm_vehicle(self):
         """
