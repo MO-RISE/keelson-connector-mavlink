@@ -3,6 +3,7 @@ import time
 # import attribute
 from pymavlink import mavutil
 from enum import Enum
+from datetime import datetime
 
 
 class Status(Enum):
@@ -34,6 +35,8 @@ class Boat:
         self.__confirm_commands = False
         self.__current_rudder_value = 1500  # center point for rc joysticks
         self.__current_throttle_value = 1500  # center point for rc joysticks
+        self.__last_command_sent = None
+        self.__mode_switch = None
 
         self.__connect()
 
@@ -42,7 +45,7 @@ class Boat:
 
         self.__control_authority: ControlAuthority
 
-        current_flight_mode = self.get_flight_mode()
+        current_flight_mode = self.get_flight_mode()  # this didnt return the correct info from the heartbeat, it's not updated
 
         # we could use switch here, but then we lock ourselves to python 3.10+
         if current_flight_mode == 0:
@@ -66,15 +69,27 @@ class Boat:
         """
         Returns true if we should allow override, i.e. any mode above 0 in our currently defined modes
         """
+
+        if self.__control_authority == ControlAuthority.UNDEFINED:
+            self.__poll_rc_mode_switch()
+
         return self.__control_authority.value > 0
 
-    def __send_mavlink_long_cmd(self, command_type, params: list, confirmation=False):
-        # type = mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM
-        self.__vehicle.mav.command_long_send(
-            self.__vehicle.target_system, self.__vehicle.target_component,
-            command_type, confirmation,
-            params[0], params[1], params[2], params[3], params[4], params[5], params[6]
-        )
+    def __poll_rc_mode_switch(self):
+        """
+        Poll the state of RC channel 11
+        """
+        message = self.__vehicle.recv_match(type='RC_CHANNELS_RAW', blocking=True)
+        if message:
+            self.rc_channel_11_value = message.chan11_raw if hasattr(message, 'chan11_raw') else None
+            if self.rc_channel_11_value is not None:
+                print(f"RC Channel 11 value: {self.rc_channel_11_value}")
+                if self.rc_channel_11_value > 1500:
+                    self.__control_authority = ControlAuthority.REMOTE
+                else:
+                    self.__control_authority = ControlAuthority.MANUAL
+            else:
+                print("RC Channel 11 value not available in the message.")
 
     @property
     def heart_beat_received(self):
@@ -100,7 +115,6 @@ class Boat:
         """
         print("Connecting to vehicle on:", self.__connection_string)
         self.__vehicle = mavutil.mavlink_connection(self.__connection_string)
-        self.__connected = True
 
     def wait_for_heartbeat(self):
         """
@@ -109,7 +123,10 @@ class Boat:
         print("Waiting for vehicle heartbeat")
         if self.__vehicle.wait_heartbeat():
             self.__heartbeat_received = True
+            self.__connected = True # probably redundant
             print("Heartbeat received")
+
+
 
     def arm_vehicle(self):
         """
