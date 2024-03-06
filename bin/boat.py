@@ -32,8 +32,8 @@ class Boat:
         self.__heartbeat_received = False
         # self.__allow_rc_override = True ## temporarily disabled as we're using the controlauthority instead
         self.__confirm_commands = False
-        self.__current_rudder_value = 1500
-        self.__current_throttle_value = 1500
+        self.__current_rudder_value = 1500  # center point for rc joysticks
+        self.__current_throttle_value = 1500  # center point for rc joysticks
 
         self.__connect()
 
@@ -58,7 +58,6 @@ class Boat:
             self.__control_authority = ControlAuthority.UNDEFINED
 
         self.__control_authority = ControlAuthority.REMOTE
-
 
     def get_vehicle(self):
         return self.__vehicle
@@ -243,7 +242,7 @@ class Boat:
         print("ENABLING PROPULSION")
         self.set_relay_on(1)
 
-    def set_steering(self, steering_value: int):
+    def set_rudder(self, steering_value: int):
         """
         Set the steering of the boat by overriding the RC channel.
         :param steering_value: The PWM value to set for the steering channel (usually between 1000 and 2000)
@@ -251,17 +250,11 @@ class Boat:
         if not self.__connected:
             print("Vehicle not connected")
             return
-        
+
         self.__current_rudder_value = int(steering_value)
 
         if self.__should_allow_rc_override():
-            self.__vehicle.mav.rc_channels_override_send(
-                self.__vehicle.target_system,  # target_system
-                self.__vehicle.target_component,  # target_component
-                self.__current_rudder_value,  # RC channel 1 value - steering
-                self.__current_throttle_value,  # RC channel 2 value - throttle in some configurations, not overridden here
-                self.__current_throttle_value, 0, 0, 0, 0, 0  # Other RC channels not overridden
-            )
+            self.__update_steering()
             print(f"Steering set to {steering_value}")
 
         else:
@@ -275,18 +268,11 @@ class Boat:
         if not self.__connected:
             print("Vehicle not connected")
             return
-        
+
         self.__current_throttle_value = int(throttle_value)
 
         if self.__should_allow_rc_override():
-            self.__vehicle.mav.rc_channels_override_send(
-                self.__vehicle.target_system,  # target_system
-                self.__vehicle.target_component,  # target_component
-                self.__current_rudder_value ,
-                self.__current_throttle_value ,  # RC channel 2 value - throttle in some configurations, not overridden here
-                self.__current_throttle_value , 0, 0, 0, 0, 0
-                # Other RC channels not overridden
-            )
+            self.__update_steering()
             print(f"Throttle set to {throttle_value}")
 
         else:
@@ -306,6 +292,20 @@ class Boat:
 
         else:
             print("Overriding RC channels currently disabled ")
+
+    def __update_steering(self):
+        """
+        Controls both rudder and throttle values
+        """
+        self.__vehicle.mav.rc_channels_override_send(
+            self.__vehicle.target_system,  # target_system
+            self.__vehicle.target_component,  # target_component
+            self.__current_rudder_value,
+            self.__current_throttle_value,  # might be unnecessary
+            self.__current_throttle_value,
+            0, 0, 0, 0, 0
+            # Other RC channels not overridden
+        )
 
     def set_raw_servo(self, servo_number, pwm_value):
         """
@@ -388,7 +388,6 @@ if __name__ == "__main__":
         msg = boat.get_vehicle().recv_msg()
 
         if msg:
-
             print(msg)
 
         # attitude_msg = boat.vehicle.recv_match(type='ATTITUDE', blocking=True, timeout=0.1)
