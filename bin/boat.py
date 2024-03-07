@@ -1,6 +1,4 @@
-import datetime
 import time
-# import attribute
 from pymavlink import mavutil
 from enum import Enum
 
@@ -32,8 +30,10 @@ class Boat:
         self.__heartbeat_received = False
         # self.__allow_rc_override = True ## temporarily disabled as we're using the controlauthority instead
         self.__confirm_commands = False
-        self.__current_rudder_value = 1500
-        self.__current_throttle_value = 1500
+        self.__current_rudder_value = 1500  # center point for rc joysticks
+        self.__current_throttle_value = 1500  # center point for rc joysticks
+        self.__last_command_sent = None
+        self.__mode_switch = None
 
         self.__connect()
 
@@ -42,7 +42,7 @@ class Boat:
 
         self.__control_authority: ControlAuthority
 
-        current_flight_mode = self.get_flight_mode()
+        current_flight_mode = self.get_flight_mode()  # this didnt return the correct info from the heartbeat, it's not updated
 
         # we could use switch here, but then we lock ourselves to python 3.10+
         if current_flight_mode == 0:
@@ -59,7 +59,6 @@ class Boat:
 
         self.__control_authority = ControlAuthority.REMOTE
 
-
     def get_vehicle(self):
         return self.__vehicle
 
@@ -67,15 +66,38 @@ class Boat:
         """
         Returns true if we should allow override, i.e. any mode above 0 in our currently defined modes
         """
+
+        if self.__control_authority == ControlAuthority.UNDEFINED:
+            self.__poll_rc_mode_switch()
+
         return self.__control_authority.value > 0
 
-    def __send_mavlink_long_cmd(self, command_type, params: list, confirmation=False):
-        # type = mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM
-        self.__vehicle.mav.command_long_send(
-            self.__vehicle.target_system, self.__vehicle.target_component,
-            command_type, confirmation,
-            params[0], params[1], params[2], params[3], params[4], params[5], params[6]
-        )
+    def __keep_alive_rc_override(self):
+        self.__update_steering()
+
+    def check_rc_mode(self):
+        self.__poll_rc_mode_switch()
+
+        if self.__should_allow_rc_override():
+            self.__keep_alive_rc_override()
+
+    def __poll_rc_mode_switch(self):
+        """
+        Poll the state of RC channel 11
+        """
+        message = self.__vehicle.recv_match(type='RC_CHANNELS_RAW', blocking=True, timeout=1)
+        if message:
+            self.rc_channel_11_value = message.chan11_raw if hasattr(message, 'chan11_raw') else None
+            if self.rc_channel_11_value is not None:
+                print(f"RC Channel 11 value: {self.rc_channel_11_value}")
+                if self.rc_channel_11_value > 1500:
+                    self.__control_authority = ControlAuthority.REMOTE
+                    print("CONTROL AUTHORITY UPDATED TO REMOTE")
+                else:
+                    self.__control_authority = ControlAuthority.MANUAL
+                    print("CONTROL AUTHORITY UPDATED TO MANUAL")
+            else:
+                print("RC Channel 11 value not available in the message.")
 
     @property
     def heart_beat_received(self):
@@ -101,7 +123,6 @@ class Boat:
         """
         print("Connecting to vehicle on:", self.__connection_string)
         self.__vehicle = mavutil.mavlink_connection(self.__connection_string)
-        self.__connected = True
 
     def wait_for_heartbeat(self):
         """
@@ -110,6 +131,7 @@ class Boat:
         print("Waiting for vehicle heartbeat")
         if self.__vehicle.wait_heartbeat():
             self.__heartbeat_received = True
+            self.__connected = True  # probably redundant
             print("Heartbeat received")
 
     def arm_vehicle(self):
@@ -243,7 +265,7 @@ class Boat:
         print("ENABLING PROPULSION")
         self.set_relay_on(1)
 
-    def set_steering(self, steering_value: int):
+    def set_rudder(self, steering_value: int):
         """
         Set the steering of the boat by overriding the RC channel.
         :param steering_value: The PWM value to set for the steering channel (usually between 1000 and 2000)
@@ -251,17 +273,11 @@ class Boat:
         if not self.__connected:
             print("Vehicle not connected")
             return
-        
+
         self.__current_rudder_value = int(steering_value)
 
         if self.__should_allow_rc_override():
-            self.__vehicle.mav.rc_channels_override_send(
-                self.__vehicle.target_system,  # target_system
-                self.__vehicle.target_component,  # target_component
-                self.__current_rudder_value,  # RC channel 1 value - steering
-                self.__current_throttle_value,  # RC channel 2 value - throttle in some configurations, not overridden here
-                self.__current_throttle_value, 0, 0, 0, 0, 0  # Other RC channels not overridden
-            )
+            self.__update_steering()
             print(f"Steering set to {steering_value}")
 
         else:
@@ -275,18 +291,11 @@ class Boat:
         if not self.__connected:
             print("Vehicle not connected")
             return
-        
+
         self.__current_throttle_value = int(throttle_value)
 
         if self.__should_allow_rc_override():
-            self.__vehicle.mav.rc_channels_override_send(
-                self.__vehicle.target_system,  # target_system
-                self.__vehicle.target_component,  # target_component
-                self.__current_rudder_value ,
-                self.__current_throttle_value ,  # RC channel 2 value - throttle in some configurations, not overridden here
-                self.__current_throttle_value , 0, 0, 0, 0, 0
-                # Other RC channels not overridden
-            )
+            self.__update_steering()
             print(f"Throttle set to {throttle_value}")
 
         else:
@@ -306,6 +315,20 @@ class Boat:
 
         else:
             print("Overriding RC channels currently disabled ")
+
+    def __update_steering(self):
+        """
+        Controls both rudder and throttle values
+        """
+        self.__vehicle.mav.rc_channels_override_send(
+            self.__vehicle.target_system,  # target_system
+            self.__vehicle.target_component,  # target_component
+            self.__current_rudder_value,
+            self.__current_throttle_value,  # might be unnecessary
+            self.__current_throttle_value,
+            0, 0, 0, 0, 0
+            # Other RC channels not overridden
+        )
 
     def set_raw_servo(self, servo_number, pwm_value):
         """
@@ -388,7 +411,6 @@ if __name__ == "__main__":
         msg = boat.get_vehicle().recv_msg()
 
         if msg:
-
             print(msg)
 
         # attitude_msg = boat.vehicle.recv_match(type='ATTITUDE', blocking=True, timeout=0.1)
