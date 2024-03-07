@@ -45,7 +45,7 @@ def query_set_rudder_prc(query):
         logging.debug(
             f">> [Queryable Rudder] COMBI rudder angle in percentage-100 port 100 starboard '{rudder_input}'"
         )
-        vehicle.set_steering(rudder_input)
+        vehicle.set_rudder(rudder_input)
         # TODO: Implement rudder control forwarding to MAVlink
 
     elif rudder_id == "0":  # Port rudder
@@ -224,7 +224,7 @@ if __name__ == "__main__":
 
     # CONNECT TO MAVLINK supported FLIGHT CONTROLLER
     try:
-        vehicle = boat.Boat(connection_string=args.device_id, baud=57600)
+        vehicle = boat.Boat(connection_string=args.device_id, baud=115200)
         # vehicle.connect() # no longer needed as the boat connects automatically now
         vehicle.wait_for_heartbeat()  # blocking
 
@@ -342,7 +342,8 @@ if __name__ == "__main__":
         # pub = session.declare_publisher(key_base+"/pub1")
 
         while True:
-            time.sleep(1)
+            vehicle.check_rc_mode()
+            time.sleep(0.1)
             # forever loop
 
     except KeyboardInterrupt:

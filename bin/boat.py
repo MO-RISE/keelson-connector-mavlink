@@ -5,16 +5,16 @@ from enum import Enum
 
 class Status(Enum):
     UNDEFINED = -1
-    ARMED = 1
-    DISARMED = 2
-    EMERGENCY = 3
+    ARMED = 0
+    DISARMED = 1
+    EMERGENCY = 2
 
 
 class ControlAuthority(Enum):
     UNDEFINED = -1
-    MANUAL = 1
-    REMOTE = 2
-    AUTOMATIC = 3
+    MANUAL = 0
+    REMOTE = 1
+    AUTOMATIC = 2
 
 
 class Boat:
@@ -70,7 +70,9 @@ class Boat:
         if self.__control_authority == ControlAuthority.UNDEFINED:
             self.__poll_rc_mode_switch()
 
-        return self.__control_authority.value > 0
+        print(self.__control_authority.value)
+
+        return self.__control_authority.value != 0
 
     def __keep_alive_rc_override(self):
         self.__update_steering()
@@ -79,21 +81,22 @@ class Boat:
         self.__poll_rc_mode_switch()
 
         if self.__should_allow_rc_override():
+            print("Should allow rc override")   
             self.__keep_alive_rc_override()
 
     def __poll_rc_mode_switch(self):
         """
         Poll the state of RC channel 11
         """
-        message = self.__vehicle.recv_match(type='RC_CHANNELS_RAW', blocking=True, timeout=1)
+        message = self.__vehicle.recv_match(type='RC_CHANNELS', blocking=True, timeout=1)
         if message:
             self.rc_channel_11_value = message.chan11_raw if hasattr(message, 'chan11_raw') else None
             if self.rc_channel_11_value is not None:
                 print(f"RC Channel 11 value: {self.rc_channel_11_value}")
-                if self.rc_channel_11_value > 1500:
+                if self.rc_channel_11_value > 1500 and self.__control_authority != ControlAuthority.REMOTE:
                     self.__control_authority = ControlAuthority.REMOTE
                     print("CONTROL AUTHORITY UPDATED TO REMOTE")
-                else:
+                elif self.rc_channel_11_value < 1500 and self.__control_authority != ControlAuthority.MANUAL:
                     self.__control_authority = ControlAuthority.MANUAL
                     print("CONTROL AUTHORITY UPDATED TO MANUAL")
             else:
@@ -320,6 +323,8 @@ class Boat:
         """
         Controls both rudder and throttle values
         """
+
+        print(f"Updated steering steering: {self.__current_rudder_value}, throttle: {self.__current_throttle_value}")
         self.__vehicle.mav.rc_channels_override_send(
             self.__vehicle.target_system,  # target_system
             self.__vehicle.target_component,  # target_component
@@ -389,7 +394,7 @@ class Boat:
 
 if __name__ == "__main__":
     connection_string = '/dev/ttyACM0'
-    boat = Boat(connection_string=connection_string, baud=57600)
+    boat = Boat(connection_string=connection_string, baud=115200)
     # boat.connect()
     boat.wait_for_heartbeat()
 
