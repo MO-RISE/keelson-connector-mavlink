@@ -47,6 +47,9 @@ python bin/main.py -r rise -e masslab -di dev --log-level 10
 python bin/main.py -r rise -e masslab -di dev --log-level 10 -sub start
 ```
 
+sudo chmod a+rw /dev/ttyACM0
+
+
 data example 
 
 POWER_STATUS {Vcc : 0, Vservo : 0, flags : 0}
