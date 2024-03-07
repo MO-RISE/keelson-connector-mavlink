@@ -176,7 +176,7 @@ def subscriber_rudder(data):
     logging.debug(f">> [Subscriber Rudder] Received value {payload.value}")
     # map the 0-100 value from keelson steering thing to value that the ardupilot understands when we override
     # the rc channel
-    vehicle.set_steering(map_value(payload.value, -99, 99, 1100, 1900))
+    vehicle.set_rudder(map_value(payload.value, -99, 99, 1100, 1900))
 
 
 def subscriber_engine(data):
