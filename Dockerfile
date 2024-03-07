@@ -12,4 +12,4 @@ COPY requirements.txt requirements.txt
 
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-CMD ["python", "bin/main.py", "-r", "rise", "-e", "masslab", "-di", "dev", "--log-level", "10", "-sub", "start"]
+CMD ["python", "bin/main.py", "-r", "rise", "-e", "masslab", "-di", "/dev/ttyACM0", "--log-level", "10", "-sub", "start"]
