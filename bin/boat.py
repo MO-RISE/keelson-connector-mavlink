@@ -81,7 +81,7 @@ class Boat:
         self.__poll_rc_mode_switch()
 
         if self.__should_allow_rc_override():
-            print("Should allow rc override")   
+            print("Should allow rc override")
             self.__keep_alive_rc_override()
 
     def __poll_rc_mode_switch(self):
@@ -277,7 +277,15 @@ class Boat:
             print("Vehicle not connected")
             return
 
-        self.__current_rudder_value = int(steering_value)
+        try:
+            received_value = int(steering_value)
+
+            if received_value >= 1100 and received_value <= 1900:
+                self.__current_rudder_value = int(steering_value)
+
+        except:
+            print(f"Invalid steering value: {steering_value}")
+            return
 
         if self.__should_allow_rc_override():
             self.__update_steering()
@@ -295,7 +303,15 @@ class Boat:
             print("Vehicle not connected")
             return
 
-        self.__current_throttle_value = int(throttle_value)
+        try:
+            received_value = int(throttle_value)
+
+            if received_value >= 1100 and received_value <= 1900:
+                self.__current_throttle_value = int(throttle_value)
+
+        except:
+            print(f"Invalid steering value: {throttle_value}")
+            return
 
         if self.__should_allow_rc_override():
             self.__update_steering()
