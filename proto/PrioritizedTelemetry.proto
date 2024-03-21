@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+import "Telemetry.proto";
+import "google/protobuf/timestamp.proto";
+
+package telemetry;
+
+message TelemetryData {
+  google.protobuf.Timestamp timestamp = 1;
+
+  VFRHUD vfr_hud = 2;
+  RawIMU raw_imu = 3;
+  AHRS ahrs = 4;
+  Vibration vibration = 5;
+  BatteryStatus battery_status = 6;
+}
