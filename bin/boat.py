@@ -409,7 +409,7 @@ class Boat:
 # example usage below
 
 if __name__ == "__main__":
-    connection_string = '/dev/ttyACM0'
+    connection_string = '/dev/cu.usbmodem2101'
     boat = Boat(connection_string=connection_string, baud=115200)
     # boat.connect()
     boat.wait_for_heartbeat()
