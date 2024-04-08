@@ -1,7 +1,7 @@
 from pymavlink import mavutil
 import time
 
-connection_string = '/dev/ttyUSB0'
+connection_string = '/dev/ttyACM0'
 baud_rate = 57600
 
 print(f"Connecting to vehicle on: {connection_string}")
