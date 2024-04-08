@@ -7,7 +7,7 @@ import zenoh
 
 session = zenoh.open()
 
-vehicle = Boat(connection_string='/dev/cu.usbmodem2101', baud=115200)
+vehicle = Boat(connection_string='/dev/ttyACM0', baud=115200)
 
 msg_types = ['VFR_HUD', 'RAW_IMU', 'AHRS', 'VIBRATION', 'BATTERY_STATUS']
 
