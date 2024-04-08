@@ -7,7 +7,7 @@ services:
     container_name: keelson-connector-mavlink
     restart: unless-stopped
     network_mode: "host"
-    previleged: true
+    privileged: true
     devices:
       - "/dev/ttyACM0:/dev/ttyACM0"
     command: 
