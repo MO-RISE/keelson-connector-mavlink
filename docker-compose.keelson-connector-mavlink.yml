@@ -14,5 +14,5 @@ services:
       [
         # "python3 bin/main.py -r rise -e masslab -di dev --log-level 10 -sub start",
         # "sudo chmod a+rw /dev/ttyACM0",
-        "-r rise -e masslab -di /dev/ttyACM0 --log-level 10 -sub start"
+        "-r rise -e masslab --device-id /dev/ttyACM0 --log-level 10 -sub start"
       ]
