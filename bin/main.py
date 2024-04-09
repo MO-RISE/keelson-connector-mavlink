@@ -17,11 +17,16 @@ from terminal_inputs import terminal_inputs
 
 from keelson.payloads.TimestampedFloat_pb2 import TimestampedFloat
 from keelson.payloads.TimestampedString_pb2 import TimestampedString
+from proto.PrioritizedTelemetry_pb2 import TelemetryData
 
+from proto.Telemetry_pb2 import VFRHUD, RawIMU
+from google.protobuf.timestamp_pb2 import Timestamp
 
 vehicle = None
 sub_rudder_listener = None
 session = None
+
+msg_types = ['VFR_HUD', 'RAW_IMU', 'AHRS', 'VIBRATION', 'BATTERY_STATUS']
 
 
 def query_set_rudder_prc(query):
@@ -237,6 +242,17 @@ if __name__ == "__main__":
     except Exception as e:
         logging.error("Error connecting to flight controller: %s", e)
 
+
+
+  
+
+
+
+
+
+
+
+
     # Keelson setup queryable and subscriber
     try:
         ### RUDDER ###
@@ -341,8 +357,46 @@ if __name__ == "__main__":
 
         # pub = session.declare_publisher(key_base+"/pub1")
 
+        pub = session.declare_publisher("rise/v0/telemetry")
+
         while True:
-            vehicle.check_rc_mode()
+            # vehicle.check_rc_mode()
+
+
+            #################################################
+            # TEST Telemetry
+            #################################################
+
+            
+            telemetry_data = TelemetryData()
+            for msg_type in msg_types:
+                msg = vehicle.get_vehicle().recv_match(type=msg_type, blocking=True)
+
+                if msg:
+                    print(msg)
+                    if msg_type == 'VFR_HUD':
+                        telemetry_data.vfr_hud.CopyFrom(VFRHUD(airspeed=msg.airspeed, groundspeed=msg.groundspeed,
+                                                            heading=msg.heading, throttle=msg.throttle,
+                                                            alt=msg.alt, climb=msg.climb))
+
+                        print('GOT VFR')
+                    elif msg_type == 'RAW_IMU':
+                        telemetry_data.raw_imu.CopyFrom(RawIMU(time_usec=msg.time_usec, xacc=msg.xacc,
+                                                            yacc=msg.yacc, zacc=msg.zacc, xgyro=msg.xgyro,
+                                                            ygyro=msg.ygyro, zgyro=msg.zgyro, xmag=msg.xmag,
+                                                            ymag=msg.ymag, zmag=msg.zmag, temperature=msg.temperature))
+                        print('GOT IMU')
+
+                    now = Timestamp()
+                    now.GetCurrentTime()
+                    telemetry_data.timestamp.CopyFrom(now)
+
+                    # serialize to bytes
+                    data_bytes = telemetry_data.SerializeToString()
+
+                    pub.put(data_bytes)
+
+
             time.sleep(0.1)
             # forever loop
 
