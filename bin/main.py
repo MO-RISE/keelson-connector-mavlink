@@ -17,9 +17,10 @@ from terminal_inputs import terminal_inputs
 
 from keelson.payloads.TimestampedFloat_pb2 import TimestampedFloat
 from keelson.payloads.TimestampedString_pb2 import TimestampedString
-from proto.PrioritizedTelemetry_pb2 import TelemetryData
 
-from proto.Telemetry_pb2 import VFRHUD, RawIMU
+from PrioritizedTelemetry_pb2 import TelemetryData
+from Telemetry_pb2 import VFRHUD, RawIMU
+
 from google.protobuf.timestamp_pb2 import Timestamp
 
 vehicle = None
