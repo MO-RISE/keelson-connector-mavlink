@@ -2,4 +2,4 @@ environs==10.3.0
 pymavlink==2.4.41
 protobuf
 protoc-wheel-0
-keelson==0.3.0rc14
+keelson==0.3.0rc15
