@@ -245,14 +245,6 @@ if __name__ == "__main__":
 
 
 
-  
-
-
-
-
-
-
-
 
     # Keelson setup queryable and subscriber
     try:
@@ -287,7 +279,6 @@ if __name__ == "__main__":
 
 
 
-
         if args.subscribe:
             # # Setting default subscribers
             key_exp_sub_rudder = keelson.construct_pub_sub_key(
@@ -313,6 +304,7 @@ if __name__ == "__main__":
                 key_exp_sub_engine,
                 subscriber_engine,
             )
+            
         #  sub_rudder_listner.undeclare()
 
         ### ENGINE ###

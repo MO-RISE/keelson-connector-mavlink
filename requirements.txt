@@ -3,3 +3,4 @@ pymavlink==2.4.41
 protobuf
 protoc-wheel-0
 keelson==0.3.0rc15
+pyserial
