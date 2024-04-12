@@ -379,26 +379,26 @@ if __name__ == "__main__":
                 if msg:
                     logging.info(f"Telemetry message': {msg}" )
                     
-                    if msg_type == 'VFR_HUD':
-                        telemetry_data.vfr_hud.CopyFrom(VFRHUD(airspeed=msg.airspeed, groundspeed=msg.groundspeed,
-                                                            heading=msg.heading, throttle=msg.throttle,
-                                                            alt=msg.alt, climb=msg.climb))
-                        logging.info(f"GOT VFR")
-                    elif msg_type == 'RAW_IMU':
-                        telemetry_data.raw_imu.CopyFrom(RawIMU(time_usec=msg.time_usec, xacc=msg.xacc,
-                                                            yacc=msg.yacc, zacc=msg.zacc, xgyro=msg.xgyro,
-                                                            ygyro=msg.ygyro, zgyro=msg.zgyro, xmag=msg.xmag,
-                                                            ymag=msg.ymag, zmag=msg.zmag, temperature=msg.temperature))
-                        logging.info(f"GOT IMU")
+                    # if msg_type == 'VFR_HUD':
+                    #     telemetry_data.vfr_hud.CopyFrom(VFRHUD(airspeed=msg.airspeed, groundspeed=msg.groundspeed,
+                    #                                         heading=msg.heading, throttle=msg.throttle,
+                    #                                         alt=msg.alt, climb=msg.climb))
+                    #     logging.info(f"GOT VFR")
+                    # elif msg_type == 'RAW_IMU':
+                    #     telemetry_data.raw_imu.CopyFrom(RawIMU(time_usec=msg.time_usec, xacc=msg.xacc,
+                    #                                         yacc=msg.yacc, zacc=msg.zacc, xgyro=msg.xgyro,
+                    #                                         ygyro=msg.ygyro, zgyro=msg.zgyro, xmag=msg.xmag,
+                    #                                         ymag=msg.ymag, zmag=msg.zmag, temperature=msg.temperature))
+                    #     logging.info(f"GOT IMU")
                         
-                    now = Timestamp()
-                    now.GetCurrentTime()
-                    telemetry_data.timestamp.CopyFrom(now)
+                    # now = Timestamp()
+                    # now.GetCurrentTime()
+                    # telemetry_data.timestamp.CopyFrom(now)
 
-                    # serialize to bytes
-                    data_bytes = telemetry_data.SerializeToString()
+                    # # serialize to bytes
+                    # data_bytes = telemetry_data.SerializeToString()
 
-                    pub.put(data_bytes)
+                    # pub.put(data_bytes)
 
 
             time.sleep(0.1)
