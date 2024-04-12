@@ -390,8 +390,8 @@ if __name__ == "__main__":
                                 climb=msg.climb,
                             )
                             # serialize to bytes
-                            data_bytes = payload.SerializeToString()
-                            envelope = keelson.Envelope(data_bytes)
+                            serialized_payload = payload.SerializeToString()
+                            envelope = keelson.enclose(serialized_payload)
                             pub.put(envelope)
 
                         # case "RAW_IMU":
