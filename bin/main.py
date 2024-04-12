@@ -199,7 +199,7 @@ def subscriber_engine(data):
 
 
 """
-Arguments: and configurations are set in docker-compose.yml
+Arguments / configurations are set in docker-compose.yml
 """
 if __name__ == "__main__":
     # Input arguments and configurations
@@ -348,9 +348,17 @@ if __name__ == "__main__":
         #     key_req_rep + "/set_state_of_propulsion_system", query_set_rudder_prc, False
         # )
 
-        # pub = session.declare_publisher(key_base+"/pub1")
 
-        pub = session.declare_publisher("rise/v0/telemetry")
+        pubKeyTelemetry = keelson.construct_pub_sub_key(
+            realm=args.realm,
+            entity_id=args.entity_id,
+            subject="telemetry",
+            source_id="speedybe",
+        )
+
+        pub = session.declare_publisher(pubKeyTelemetry)
+
+        # pub = session.declare_publisher("rise/v0/telemetry")
 
         while True:
             # vehicle.check_rc_mode()
@@ -366,20 +374,20 @@ if __name__ == "__main__":
                 msg = vehicle.get_vehicle().recv_match(type=msg_type, blocking=True)
 
                 if msg:
-                    print(msg)
+                    logging.info(f"Telemetry message: {msg}")
+                    
                     if msg_type == 'VFR_HUD':
                         telemetry_data.vfr_hud.CopyFrom(VFRHUD(airspeed=msg.airspeed, groundspeed=msg.groundspeed,
                                                             heading=msg.heading, throttle=msg.throttle,
                                                             alt=msg.alt, climb=msg.climb))
-
-                        print('GOT VFR')
+                        logging.info(f"GOT VFR")
                     elif msg_type == 'RAW_IMU':
                         telemetry_data.raw_imu.CopyFrom(RawIMU(time_usec=msg.time_usec, xacc=msg.xacc,
                                                             yacc=msg.yacc, zacc=msg.zacc, xgyro=msg.xgyro,
                                                             ygyro=msg.ygyro, zgyro=msg.zgyro, xmag=msg.xmag,
                                                             ymag=msg.ymag, zmag=msg.zmag, temperature=msg.temperature))
-                        print('GOT IMU')
-
+                        logging.info(f"GOT IMU")
+                        
                     now = Timestamp()
                     now.GetCurrentTime()
                     telemetry_data.timestamp.CopyFrom(now)
