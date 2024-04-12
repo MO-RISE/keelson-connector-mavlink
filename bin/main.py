@@ -370,6 +370,7 @@ if __name__ == "__main__":
 
             
             telemetry_data = TelemetryData()
+            logging.info("IN:", telemetry_data)
             for msg_type in msg_types:
                 msg = vehicle.get_vehicle().recv_match(type=msg_type, blocking=True)
 
