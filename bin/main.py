@@ -391,7 +391,7 @@ if __name__ == "__main__":
                             )
                             # serialize to bytes
                             data_bytes = payload.SerializeToString()
-                            envelope = keelson.envelope(data_bytes)
+                            envelope = keelson.Envelope(data_bytes)
                             pub.put(envelope)
 
                         # case "RAW_IMU":
