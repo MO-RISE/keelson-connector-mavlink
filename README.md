@@ -195,3 +195,15 @@ sudo chmod a+rw /dev/ttyACM0
 | voltages_ext      | [0, 0, 0, 0]       |
 | mode              | 0                  |
 | fault_bitmask     | 0                  |
+
+
+### VFR HUD
+| Parameter         | Value              |
+| ----------------- | ------------------ |
+| airspeed          | 0                  |
+| groundspeed       | 0.0170395914465    |
+| heading           | 293                |
+| throttle          | -59.43             |
+| alt               | 0                  |
+| climb             | -0.00705           |
+  

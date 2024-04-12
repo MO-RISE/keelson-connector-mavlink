@@ -17,9 +17,16 @@ from terminal_inputs import terminal_inputs
 
 from keelson.payloads.TimestampedFloat_pb2 import TimestampedFloat
 from keelson.payloads.TimestampedString_pb2 import TimestampedString
+from keelson.payloads.FlightControllerTelemetry_pb2 import (
+    VFRHUD,
+    RawIMU,
+    AHRS,
+    Vibration,
+    BatteryStatus,
+)
 
-from PrioritizedTelemetry_pb2 import TelemetryData
-from Telemetry_pb2 import VFRHUD, RawIMU
+# from PrioritizedTelemetry_pb2 import TelemetryData
+# from Telemetry_pb2 import VFRHUD, RawIMU, AHRS, Vibration, BatteryStatus
 
 from google.protobuf.timestamp_pb2 import Timestamp
 
@@ -27,7 +34,7 @@ vehicle = None
 sub_rudder_listener = None
 session = None
 
-msg_types = ['VFR_HUD', 'RAW_IMU', 'AHRS', 'VIBRATION', 'BATTERY_STATUS']
+msg_types = ["VFR_HUD", "RAW_IMU", "AHRS", "VIBRATION", "BATTERY_STATUS"]
 
 
 def query_set_rudder_prc(query):
@@ -36,7 +43,7 @@ def query_set_rudder_prc(query):
 
     """
     global vehicle
-    
+
     key_exp = str(query.selector)
     rudder_id = key_exp.split("/")[5]
     logging.debug(
@@ -243,9 +250,6 @@ if __name__ == "__main__":
     except Exception as e:
         logging.error("Error connecting to flight controller: %s", e)
 
-
-
-
     # Keelson setup queryable and subscriber
     try:
         ### RUDDER ###
@@ -277,8 +281,6 @@ if __name__ == "__main__":
             False,
         )
 
-
-
         if args.subscribe:
             # # Setting default subscribers
             key_exp_sub_rudder = keelson.construct_pub_sub_key(
@@ -304,7 +306,7 @@ if __name__ == "__main__":
                 key_exp_sub_engine,
                 subscriber_engine,
             )
-            
+
         #  sub_rudder_listner.undeclare()
 
         ### ENGINE ###
@@ -348,59 +350,116 @@ if __name__ == "__main__":
         #     key_req_rep + "/set_state_of_propulsion_system", query_set_rudder_prc, False
         # )
 
-
         pubKeyTelemetry = keelson.construct_pub_sub_key(
             realm=args.realm,
             entity_id=args.entity_id,
             subject="telemetry",
-            source_id="speedybe",
+            source_id="VFR_HUD",
         )
-
+        logging.info(f"Setting up TELEMETRY publisher: {pubKeyTelemetry}")
         pub = session.declare_publisher(pubKeyTelemetry)
-
-        # pub = session.declare_publisher("rise/v0/telemetry")
 
         while True:
             # vehicle.check_rc_mode()
-
 
             #################################################
             # TEST Telemetry
             #################################################
 
-            
-            telemetry_data = TelemetryData() # define telemetry proto
-            
+            telemetry_data = TelemetryData()  # define telemetry proto
+
             for msg_type in msg_types:
-               
-                # msg = vehicle.get_vehicle().recv_match(type=msg_type, blocking=True) # Only selected set of messages
-                msg = vehicle.get_vehicle().recv_msg() # ALL messages
+
+                msg = vehicle.get_vehicle().recv_match(
+                    type=msg_type, blocking=True
+                )  # Only selected set of messages
+
+                # ['VFR_HUD', 'RAW_IMU', 'AHRS', 'VIBRATION', 'BATTERY_STATUS']
 
                 if msg:
-                    logging.info(f"Telemetry message': {msg}" )
-                    
-                    # if msg_type == 'VFR_HUD':
-                    #     telemetry_data.vfr_hud.CopyFrom(VFRHUD(airspeed=msg.airspeed, groundspeed=msg.groundspeed,
-                    #                                         heading=msg.heading, throttle=msg.throttle,
-                    #                                         alt=msg.alt, climb=msg.climb))
-                    #     logging.info(f"GOT VFR")
-                    # elif msg_type == 'RAW_IMU':
-                    #     telemetry_data.raw_imu.CopyFrom(RawIMU(time_usec=msg.time_usec, xacc=msg.xacc,
-                    #                                         yacc=msg.yacc, zacc=msg.zacc, xgyro=msg.xgyro,
-                    #                                         ygyro=msg.ygyro, zgyro=msg.zgyro, xmag=msg.xmag,
-                    #                                         ymag=msg.ymag, zmag=msg.zmag, temperature=msg.temperature))
-                    #     logging.info(f"GOT IMU")
-                        
+                    logging.info(f"Telemetry message': {msg}")
+
+                    match msg_type:
+                        case "VFR_HUD":
+                            logging.info(f"VFR_HUD MANAGED")
+                            VFRHUD(
+                                airspeed=msg.airspeed,
+                                groundspeed=msg.groundspeed,
+                                heading=msg.heading,
+                                throttle=msg.throttle,
+                                alt=msg.alt,
+                                climb=msg.climb,
+                            )
+                            # serialize to bytes
+                            data_bytes = VFRHUD.SerializeToString()
+                            envelope = keelson.envelope(data_bytes)
+                            pub.put(envelope)
+
+
+                        case "RAW_IMU":
+                            logging.info(f"RAW_IMU MANAGED")
+
+                            RawIMU(
+                                time_usec=msg.time_usec,
+                                xacc=msg.xacc,
+                                yacc=msg.yacc,
+                                zacc=msg.zacc,
+                                xgyro=msg.xgyro,
+                                ygyro=msg.ygyro,
+                                zgyro=msg.zgyro,
+                                xmag=msg.xmag,
+                                ymag=msg.ymag,
+                                zmag=msg.zmag,
+                                temperature=msg.temperature,
+                            )
+
+                        case "AHRS":
+                            logging.info(f"AHRS MANAGED")
+                            AHRS(
+                                omegaIx=msg.omegaIx,
+                                omegaIy=msg.omegaIy,
+                                omegaIz=msg.omegaIz,
+                                accel_weight=msg.accel_weight,
+                                renorm_val=msg.renorm_val,
+                                error_rp=msg.error_rp,
+                                error_yaw=msg.error_yaw,
+                            )
+
+                        case "VIBRATION":
+                            logging.info(f"VIBRATION MANAGED")
+                            Vibration(
+                                vibration_x=msg.vibration_x,
+                                vibration_y=msg.vibration_y,
+                                vibration_z=msg.vibration_z,
+                                clipping_0=msg.clipping_0,
+                                clipping_1=msg.clipping_1,
+                                clipping_2=msg.clipping_2,
+                            )
+
+                        case "BATTERY_STATUS":
+                            logging.info(f"BATTERY_STATUS MANAGED")
+                            BatteryStatus(
+                                id=msg.id,
+                                battery_function=msg.battery_function,
+                                type=msg.type,
+                                temperature=msg.temperature,
+                                voltages=msg.voltages,
+                                current_battery=msg.current_battery,
+                                current_consumed=msg.current_consumed,
+                                energy_consumed=msg.energy_consumed,
+                                battery_remaining=msg.battery_remaining,
+                                time_remaining=msg.time_remaining,
+                                charge_state=msg.charge_state,
+                                voltages_ext=msg.voltages_ext,
+                                mode=msg.mode,
+                                fault_bitmask=msg.fault_bitmask,
+                            )
+
                     # now = Timestamp()
                     # now.GetCurrentTime()
                     # telemetry_data.timestamp.CopyFrom(now)
 
-                    # # serialize to bytes
-                    # data_bytes = telemetry_data.SerializeToString()
-
-                    # pub.put(data_bytes)
-
-
+                  
             time.sleep(0.1)
             # forever loop
 
