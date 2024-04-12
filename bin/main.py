@@ -366,7 +366,6 @@ if __name__ == "__main__":
             # TEST Telemetry
             #################################################
 
-         
             for msg_type in msg_types:
 
                 msg = vehicle.get_vehicle().recv_match(
@@ -381,7 +380,8 @@ if __name__ == "__main__":
                     match msg_type:
                         case "VFR_HUD":
                             logging.info(f"VFR_HUD MANAGED")
-                            VFRHUD(
+
+                            payload = VFRHUD(
                                 airspeed=msg.airspeed,
                                 groundspeed=msg.groundspeed,
                                 heading=msg.heading,
@@ -390,75 +390,73 @@ if __name__ == "__main__":
                                 climb=msg.climb,
                             )
                             # serialize to bytes
-                            data_bytes = VFRHUD.SerializeToString()
+                            data_bytes = payload.SerializeToString()
                             envelope = keelson.envelope(data_bytes)
                             pub.put(envelope)
 
+                        # case "RAW_IMU":
+                        #     logging.info(f"RAW_IMU MANAGED")
+                        #     payload = RawIMU()
+                        #     RawIMU(
+                        #         time_usec=msg.time_usec,
+                        #         xacc=msg.xacc,
+                        #         yacc=msg.yacc,
+                        #         zacc=msg.zacc,
+                        #         xgyro=msg.xgyro,
+                        #         ygyro=msg.ygyro,
+                        #         zgyro=msg.zgyro,
+                        #         xmag=msg.xmag,
+                        #         ymag=msg.ymag,
+                        #         zmag=msg.zmag,
+                        #         temperature=msg.temperature,
+                        #     )
 
-                        case "RAW_IMU":
-                            logging.info(f"RAW_IMU MANAGED")
+                        # case "AHRS":
+                        #     logging.info(f"AHRS MANAGED")
+                        #     AHRS(
+                        #         omegaIx=msg.omegaIx,
+                        #         omegaIy=msg.omegaIy,
+                        #         omegaIz=msg.omegaIz,
+                        #         accel_weight=msg.accel_weight,
+                        #         renorm_val=msg.renorm_val,
+                        #         error_rp=msg.error_rp,
+                        #         error_yaw=msg.error_yaw,
+                        #     )
 
-                            RawIMU(
-                                time_usec=msg.time_usec,
-                                xacc=msg.xacc,
-                                yacc=msg.yacc,
-                                zacc=msg.zacc,
-                                xgyro=msg.xgyro,
-                                ygyro=msg.ygyro,
-                                zgyro=msg.zgyro,
-                                xmag=msg.xmag,
-                                ymag=msg.ymag,
-                                zmag=msg.zmag,
-                                temperature=msg.temperature,
-                            )
+                        # case "VIBRATION":
+                        #     logging.info(f"VIBRATION MANAGED")
+                        #     Vibration(
+                        #         vibration_x=msg.vibration_x,
+                        #         vibration_y=msg.vibration_y,
+                        #         vibration_z=msg.vibration_z,
+                        #         clipping_0=msg.clipping_0,
+                        #         clipping_1=msg.clipping_1,
+                        #         clipping_2=msg.clipping_2,
+                        #     )
 
-                        case "AHRS":
-                            logging.info(f"AHRS MANAGED")
-                            AHRS(
-                                omegaIx=msg.omegaIx,
-                                omegaIy=msg.omegaIy,
-                                omegaIz=msg.omegaIz,
-                                accel_weight=msg.accel_weight,
-                                renorm_val=msg.renorm_val,
-                                error_rp=msg.error_rp,
-                                error_yaw=msg.error_yaw,
-                            )
-
-                        case "VIBRATION":
-                            logging.info(f"VIBRATION MANAGED")
-                            Vibration(
-                                vibration_x=msg.vibration_x,
-                                vibration_y=msg.vibration_y,
-                                vibration_z=msg.vibration_z,
-                                clipping_0=msg.clipping_0,
-                                clipping_1=msg.clipping_1,
-                                clipping_2=msg.clipping_2,
-                            )
-
-                        case "BATTERY_STATUS":
-                            logging.info(f"BATTERY_STATUS MANAGED")
-                            BatteryStatus(
-                                id=msg.id,
-                                battery_function=msg.battery_function,
-                                type=msg.type,
-                                temperature=msg.temperature,
-                                voltages=msg.voltages,
-                                current_battery=msg.current_battery,
-                                current_consumed=msg.current_consumed,
-                                energy_consumed=msg.energy_consumed,
-                                battery_remaining=msg.battery_remaining,
-                                time_remaining=msg.time_remaining,
-                                charge_state=msg.charge_state,
-                                voltages_ext=msg.voltages_ext,
-                                mode=msg.mode,
-                                fault_bitmask=msg.fault_bitmask,
-                            )
+                        # case "BATTERY_STATUS":
+                        #     logging.info(f"BATTERY_STATUS MANAGED")
+                        #     BatteryStatus(
+                        #         id=msg.id,
+                        #         battery_function=msg.battery_function,
+                        #         type=msg.type,
+                        #         temperature=msg.temperature,
+                        #         voltages=msg.voltages,
+                        #         current_battery=msg.current_battery,
+                        #         current_consumed=msg.current_consumed,
+                        #         energy_consumed=msg.energy_consumed,
+                        #         battery_remaining=msg.battery_remaining,
+                        #         time_remaining=msg.time_remaining,
+                        #         charge_state=msg.charge_state,
+                        #         voltages_ext=msg.voltages_ext,
+                        #         mode=msg.mode,
+                        #         fault_bitmask=msg.fault_bitmask,
+                        #     )
 
                     # now = Timestamp()
                     # now.GetCurrentTime()
                     # telemetry_data.timestamp.CopyFrom(now)
 
-                  
             time.sleep(0.1)
             # forever loop
 
