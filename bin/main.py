@@ -369,13 +369,15 @@ if __name__ == "__main__":
             #################################################
 
             
-            telemetry_data = TelemetryData()
-            logging.info("IN:", telemetry_data)
+            telemetry_data = TelemetryData() # define telemetry proto
+            
             for msg_type in msg_types:
-                msg = vehicle.get_vehicle().recv_match(type=msg_type, blocking=True)
+               
+                # msg = vehicle.get_vehicle().recv_match(type=msg_type, blocking=True) # Only selected set of messages
+                msg = vehicle.get_vehicle().recv_msg() # ALL messages
 
                 if msg:
-                    logging.info(f"Telemetry message: {msg}")
+                    logging.info(f"Telemetry message': {msg}" )
                     
                     if msg_type == 'VFR_HUD':
                         telemetry_data.vfr_hud.CopyFrom(VFRHUD(airspeed=msg.airspeed, groundspeed=msg.groundspeed,
