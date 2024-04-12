@@ -366,8 +366,7 @@ if __name__ == "__main__":
             # TEST Telemetry
             #################################################
 
-            telemetry_data = TelemetryData()  # define telemetry proto
-
+         
             for msg_type in msg_types:
 
                 msg = vehicle.get_vehicle().recv_match(
