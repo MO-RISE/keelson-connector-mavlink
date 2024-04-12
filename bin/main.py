@@ -353,8 +353,8 @@ if __name__ == "__main__":
         pubKeyTelemetry = keelson.construct_pub_sub_key(
             realm=args.realm,
             entity_id=args.entity_id,
-            subject="telemetry",
-            source_id="VFR_HUD",
+            subject="flight_controller_telemetry",
+            source_id="speedybee/vfr",
         )
         logging.info(f"Setting up TELEMETRY publisher: {pubKeyTelemetry}")
         pub = session.declare_publisher(pubKeyTelemetry)
