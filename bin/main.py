@@ -3,7 +3,6 @@ Utility tool for connecting MAVlink flight controller to Keelson.
 """
 
 import zenoh
-
 import logging
 import warnings
 import atexit
@@ -18,7 +17,7 @@ from terminal_inputs import terminal_inputs
 from keelson.payloads.TimestampedFloat_pb2 import TimestampedFloat
 from keelson.payloads.TimestampedString_pb2 import TimestampedString
 from keelson.payloads.ImuReading_pb2 import ImuReading
-from keelson.payloads.FlightControllerTelemetry_pb2 import (
+from keelson.payloads.Experimental_FlightControllerTelemetry_pb2 import (
     VFRHUD,
     RawIMU,
     AHRS,
