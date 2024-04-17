@@ -390,7 +390,7 @@ if __name__ == "__main__":
         pub_vibration = session.declare_publisher(pubkey_vibration)
         logging.info(f"Decler up TELEMETRY publisher: {pub_vibration}")
 
-        # BATTERY_STATUS
+        # BATTERY_STATUS (OK)
         pubkey_battery = keelson.construct_pub_sub_key(
             realm=args.realm,
             entity_id=args.entity_id,
@@ -429,7 +429,7 @@ if __name__ == "__main__":
                             # serialize to bytes
                             serialized_payload = payload.SerializeToString()
                             envelope = keelson.enclose(serialized_payload)
-                            pub_ahrs.put(envelope)
+                            pub_vfrhud.put(envelope)
 
                         case "RAW_IMU":
                             logging.info(f"RAW_IMU MANAGED")
