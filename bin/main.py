@@ -360,7 +360,7 @@ if __name__ == "__main__":
         pub_vfrhud = session.declare_publisher(pubkey_vfrhud)
         logging.info(f"Decler up TELEMETRY publisher: {pub_vfrhud}")
 
-        # RAW_IMU
+        # RAW_IMU (OK)
         pubkey_rawimu = keelson.construct_pub_sub_key(
             realm=args.realm,
             entity_id=args.entity_id,
@@ -370,7 +370,7 @@ if __name__ == "__main__":
         pub_rawimu = session.declare_publisher(pubkey_rawimu)
         logging.info(f"Decler up TELEMETRY publisher: {pub_rawimu}")
         
-        # AHRS
+        # AHRS (OK)
         pubkey_ahrs = keelson.construct_pub_sub_key(
             realm=args.realm,
             entity_id=args.entity_id,
@@ -380,7 +380,7 @@ if __name__ == "__main__":
         pub_ahrs = session.declare_publisher(pubkey_ahrs)
         logging.info(f"Decler up TELEMETRY publisher: {pub_ahrs}")
 
-        # VIBRATION
+        # VIBRATION (OK)
         pubkey_vibration = keelson.construct_pub_sub_key(
             realm=args.realm,
             entity_id=args.entity_id,
@@ -481,7 +481,7 @@ if __name__ == "__main__":
 
                         case "BATTERY_STATUS":
                             logging.info(f"BATTERY_STATUS MANAGED")
-                            BatteryStatus(
+                            payload = BatteryStatus(
                                 id=msg.id,
                                 battery_function=msg.battery_function,
                                 type=msg.type,
@@ -499,7 +499,7 @@ if __name__ == "__main__":
                             )
                             serialized_payload = payload.SerializeToString()
                             envelope = keelson.enclose(serialized_payload)
-                            pub_vibration.put(envelope)
+                            pub_battery.put(envelope)
 
 
             time.sleep(0.1)
