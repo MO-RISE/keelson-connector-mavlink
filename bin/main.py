@@ -384,7 +384,7 @@ if __name__ == "__main__":
         pubkey_vibration = keelson.construct_pub_sub_key(
             realm=args.realm,
             entity_id=args.entity_id,
-            subject="flight_controller_telemetry_vibraton",
+            subject="flight_controller_telemetry_vibration",
             source_id="speedybee",
         )
         pub_vibration = session.declare_publisher(pubkey_vibration)
