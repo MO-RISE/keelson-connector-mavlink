@@ -2,5 +2,5 @@ environs==10.3.0
 pymavlink==2.4.41
 protobuf
 protoc-wheel-0
-keelson==0.3.1-pre.2
+keelson==0.3.1-pre.9
 pyserial

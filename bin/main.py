@@ -17,6 +17,7 @@ from terminal_inputs import terminal_inputs
 
 from keelson.payloads.TimestampedFloat_pb2 import TimestampedFloat
 from keelson.payloads.TimestampedString_pb2 import TimestampedString
+from keelson.payloads.ImuReading_pb2 import ImuReading
 from keelson.payloads.FlightControllerTelemetry_pb2 import (
     VFRHUD,
     RawIMU,
@@ -350,18 +351,57 @@ if __name__ == "__main__":
         #     key_req_rep + "/set_state_of_propulsion_system", query_set_rudder_prc, False
         # )
 
-        pubKeyTelemetry = keelson.construct_pub_sub_key(
+        # VFR_HUD
+        pubkey_vfrhud = keelson.construct_pub_sub_key(
             realm=args.realm,
             entity_id=args.entity_id,
-            subject="flight_controller_telemetry",
-            source_id="speedybee/vfr",
+            subject="flight_controller_telemetry_vfrhud",
+            source_id="speedybee",
         )
-        logging.info(f"Setting up TELEMETRY publisher: {pubKeyTelemetry}")
-        pub = session.declare_publisher(pubKeyTelemetry)
+        pub_vfrhud = session.declare_publisher(pubkey_vfrhud)
+        logging.info(f"Decler up TELEMETRY publisher: {pub_vfrhud}")
+
+        # RAW_IMU
+        pubkey_rawimu = keelson.construct_pub_sub_key(
+            realm=args.realm,
+            entity_id=args.entity_id,
+            subject="flight_controller_telemetry_rawimu",
+            source_id="speedybee",
+        )
+        pub_rawimu = session.declare_publisher(pubkey_rawimu)
+        logging.info(f"Decler up TELEMETRY publisher: {pub_rawimu}")
+        
+        # AHRS
+        pubkey_ahrs = keelson.construct_pub_sub_key(
+            realm=args.realm,
+            entity_id=args.entity_id,
+            subject="flight_controller_telemetry_ahrs",
+            source_id="speedybee",
+        )
+        pub_ahrs = session.declare_publisher(pubkey_ahrs)
+        logging.info(f"Decler up TELEMETRY publisher: {pub_ahrs}")
+
+        # VIBRATION
+        pubkey_vibration = keelson.construct_pub_sub_key(
+            realm=args.realm,
+            entity_id=args.entity_id,
+            subject="flight_controller_telemetry_vibraton",
+            source_id="speedybee",
+        )
+        pub_vibration = session.declare_publisher(pubkey_vibration)
+        logging.info(f"Decler up TELEMETRY publisher: {pub_vibration}")
+
+        # BATTERY_STATUS
+        pubkey_battery = keelson.construct_pub_sub_key(
+            realm=args.realm,
+            entity_id=args.entity_id,
+            subject="flight_controller_telemetry_battery",
+            source_id="speedybee",
+        )
+        pub_battery = session.declare_publisher(pubkey_battery)
+        logging.info(f"Decler up TELEMETRY publisher: {pub_ahrs}")
 
         while True:
-            # vehicle.check_rc_mode()
-
             #################################################
             # TEST Telemetry
             #################################################
@@ -371,7 +411,6 @@ if __name__ == "__main__":
                 msg = vehicle.get_vehicle().recv_match(
                     type=msg_type, blocking=True
                 )  # Only selected set of messages
-
                 # ['VFR_HUD', 'RAW_IMU', 'AHRS', 'VIBRATION', 'BATTERY_STATUS']
 
                 if msg:
@@ -380,7 +419,6 @@ if __name__ == "__main__":
                     match msg_type:
                         case "VFR_HUD":
                             logging.info(f"VFR_HUD MANAGED")
-
                             payload = VFRHUD(
                                 airspeed=msg.airspeed,
                                 groundspeed=msg.groundspeed,
@@ -392,70 +430,78 @@ if __name__ == "__main__":
                             # serialize to bytes
                             serialized_payload = payload.SerializeToString()
                             envelope = keelson.enclose(serialized_payload)
-                            pub.put(envelope)
+                            pub_ahrs.put(envelope)
 
-                        # case "RAW_IMU":
-                        #     logging.info(f"RAW_IMU MANAGED")
-                        #     payload = RawIMU()
-                        #     RawIMU(
-                        #         time_usec=msg.time_usec,
-                        #         xacc=msg.xacc,
-                        #         yacc=msg.yacc,
-                        #         zacc=msg.zacc,
-                        #         xgyro=msg.xgyro,
-                        #         ygyro=msg.ygyro,
-                        #         zgyro=msg.zgyro,
-                        #         xmag=msg.xmag,
-                        #         ymag=msg.ymag,
-                        #         zmag=msg.zmag,
-                        #         temperature=msg.temperature,
-                        #     )
+                        case "RAW_IMU":
+                            logging.info(f"RAW_IMU MANAGED")
+                            payload = RawIMU(
+                                time_usec=msg.time_usec,
+                                xacc=msg.xacc,
+                                yacc=msg.yacc,
+                                zacc=msg.zacc,
+                                xgyro=msg.xgyro,
+                                ygyro=msg.ygyro,
+                                zgyro=msg.zgyro,
+                                xmag=msg.xmag,
+                                ymag=msg.ymag,
+                                zmag=msg.zmag,
+                                temperature=msg.temperature,
+                            )
+                            serialized_payload = payload.SerializeToString()
+                            envelope = keelson.enclose(serialized_payload)
+                            pub_rawimu.put(envelope)
 
-                        # case "AHRS":
-                        #     logging.info(f"AHRS MANAGED")
-                        #     AHRS(
-                        #         omegaIx=msg.omegaIx,
-                        #         omegaIy=msg.omegaIy,
-                        #         omegaIz=msg.omegaIz,
-                        #         accel_weight=msg.accel_weight,
-                        #         renorm_val=msg.renorm_val,
-                        #         error_rp=msg.error_rp,
-                        #         error_yaw=msg.error_yaw,
-                        #     )
+                        case "AHRS":
+                            logging.info(f"AHRS MANAGED")
+                            payload = AHRS(
+                                omegaIx=msg.omegaIx,
+                                omegaIy=msg.omegaIy,
+                                omegaIz=msg.omegaIz,
+                                accel_weight=msg.accel_weight,
+                                renorm_val=msg.renorm_val,
+                                error_rp=msg.error_rp,
+                                error_yaw=msg.error_yaw,
+                            )
+                            serialized_payload = payload.SerializeToString()
+                            envelope = keelson.enclose(serialized_payload)
+                            pub_ahrs.put(envelope)
 
-                        # case "VIBRATION":
-                        #     logging.info(f"VIBRATION MANAGED")
-                        #     Vibration(
-                        #         vibration_x=msg.vibration_x,
-                        #         vibration_y=msg.vibration_y,
-                        #         vibration_z=msg.vibration_z,
-                        #         clipping_0=msg.clipping_0,
-                        #         clipping_1=msg.clipping_1,
-                        #         clipping_2=msg.clipping_2,
-                        #     )
+                        case "VIBRATION":
+                            logging.info(f"VIBRATION MANAGED")
+                            payload = Vibration(
+                                vibration_x=msg.vibration_x,
+                                vibration_y=msg.vibration_y,
+                                vibration_z=msg.vibration_z,
+                                clipping_0=msg.clipping_0,
+                                clipping_1=msg.clipping_1,
+                                clipping_2=msg.clipping_2,
+                            )
+                            serialized_payload = payload.SerializeToString()
+                            envelope = keelson.enclose(serialized_payload)
+                            pub_vibration.put(envelope)
 
-                        # case "BATTERY_STATUS":
-                        #     logging.info(f"BATTERY_STATUS MANAGED")
-                        #     BatteryStatus(
-                        #         id=msg.id,
-                        #         battery_function=msg.battery_function,
-                        #         type=msg.type,
-                        #         temperature=msg.temperature,
-                        #         voltages=msg.voltages,
-                        #         current_battery=msg.current_battery,
-                        #         current_consumed=msg.current_consumed,
-                        #         energy_consumed=msg.energy_consumed,
-                        #         battery_remaining=msg.battery_remaining,
-                        #         time_remaining=msg.time_remaining,
-                        #         charge_state=msg.charge_state,
-                        #         voltages_ext=msg.voltages_ext,
-                        #         mode=msg.mode,
-                        #         fault_bitmask=msg.fault_bitmask,
-                        #     )
+                        case "BATTERY_STATUS":
+                            logging.info(f"BATTERY_STATUS MANAGED")
+                            BatteryStatus(
+                                id=msg.id,
+                                battery_function=msg.battery_function,
+                                type=msg.type,
+                                temperature=msg.temperature,
+                                voltages=msg.voltages,
+                                current_battery=msg.current_battery,
+                                current_consumed=msg.current_consumed,
+                                energy_consumed=msg.energy_consumed,
+                                battery_remaining=msg.battery_remaining,
+                                time_remaining=msg.time_remaining,
+                                charge_state=msg.charge_state,
+                                voltages_ext=msg.voltages_ext,
+                                mode=msg.mode,
+                                fault_bitmask=msg.fault_bitmask,
+                            )
+                            serialized_payload = payload.SerializeToString()
+                            envelope = keelson.enclose(serialized_payload)
+                            pub_vibration.put(envelope)
 
-                    # now = Timestamp()
-                    # now.GetCurrentTime()
-                    # telemetry_data.timestamp.CopyFrom(now)
 
             time.sleep(0.1)
             # forever loop
