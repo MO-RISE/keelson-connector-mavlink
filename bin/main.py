@@ -25,11 +25,6 @@ from keelson.payloads.Experimental_FlightControllerTelemetry_pb2 import (
     BatteryStatus,
 )
 
-# from PrioritizedTelemetry_pb2 import TelemetryData
-# from Telemetry_pb2 import VFRHUD, RawIMU, AHRS, Vibration, BatteryStatus
-
-from google.protobuf.timestamp_pb2 import Timestamp
-
 vehicle = None
 sub_rudder_listener = None
 session = None
@@ -209,8 +204,8 @@ def subscriber_engine(data):
 Arguments / configurations are set in docker-compose.yml
 """
 if __name__ == "__main__":
+    
     # Input arguments and configurations
-
     args = terminal_inputs()
 
     # Setup logger
