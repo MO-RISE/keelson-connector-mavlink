@@ -10,5 +10,5 @@ services:
     privileged: true
     devices:
       - "/dev/ttyACM0:/dev/ttyACM0"
-    command: "-r rise -e masslab --device-id /dev/ttyACM0 --log-level 10 -sub start"
+    command: "-r rise -e masslab --device-id /dev/ttyACM0 --log-level 10"
     
