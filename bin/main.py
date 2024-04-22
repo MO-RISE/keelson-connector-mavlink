@@ -408,11 +408,10 @@ if __name__ == "__main__":
                 # ['VFR_HUD', 'RAW_IMU', 'AHRS', 'VIBRATION', 'BATTERY_STATUS']
 
                 if msg:
-                    logging.info(f"Telemetry message': {msg}")
+                    logging.debug(f"Telemetry message': {msg}")
 
                     match msg_type:
                         case "VFR_HUD":
-                            logging.info(f"VFR_HUD MANAGED")
                             payload = VFRHUD(
                                 airspeed=msg.airspeed,
                                 groundspeed=msg.groundspeed,
@@ -425,9 +424,9 @@ if __name__ == "__main__":
                             serialized_payload = payload.SerializeToString()
                             envelope = keelson.enclose(serialized_payload)
                             pub_vfrhud.put(envelope)
+                            logging.info(f"VFR_HUD SENT")
 
                         case "RAW_IMU":
-                            logging.info(f"RAW_IMU MANAGED")
                             payload = RawIMU(
                                 time_usec=msg.time_usec,
                                 xacc=msg.xacc,
@@ -444,9 +443,9 @@ if __name__ == "__main__":
                             serialized_payload = payload.SerializeToString()
                             envelope = keelson.enclose(serialized_payload)
                             pub_rawimu.put(envelope)
+                            logging.info(f"RAW_IMU SENT")
 
                         case "AHRS":
-                            logging.info(f"AHRS MANAGED")
                             payload = AHRS(
                                 omegaIx=msg.omegaIx,
                                 omegaIy=msg.omegaIy,
@@ -459,9 +458,9 @@ if __name__ == "__main__":
                             serialized_payload = payload.SerializeToString()
                             envelope = keelson.enclose(serialized_payload)
                             pub_ahrs.put(envelope)
+                            logging.info(f"AHRS SENT")
 
                         case "VIBRATION":
-                            logging.info(f"VIBRATION MANAGED")
                             payload = Vibration(
                                 vibration_x=msg.vibration_x,
                                 vibration_y=msg.vibration_y,
@@ -473,9 +472,9 @@ if __name__ == "__main__":
                             serialized_payload = payload.SerializeToString()
                             envelope = keelson.enclose(serialized_payload)
                             pub_vibration.put(envelope)
+                            logging.info(f"VIBRATION SENT")
 
                         case "BATTERY_STATUS":
-                            logging.info(f"BATTERY_STATUS MANAGED")
                             payload = BatteryStatus(
                                 id=msg.id,
                                 battery_function=msg.battery_function,
@@ -495,6 +494,7 @@ if __name__ == "__main__":
                             serialized_payload = payload.SerializeToString()
                             envelope = keelson.enclose(serialized_payload)
                             pub_battery.put(envelope)
+                            logging.info(f"BATTERY_STATUS SENT")
 
 
             time.sleep(0.1)
