@@ -7,13 +7,8 @@ services:
     container_name: keelson-connector-mavlink
     restart: unless-stopped
     network_mode: "host"
+    privileged: true
     devices:
       - "/dev/ttyACM0:/dev/ttyACM0"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    command: 
-      [
-        # "ls"
-        # "python3 bin/main.py -r rise -e masslab -di dev --log-level 10 -sub start",
-        #"sudo chmod a+rw /dev/ttyACM0"
-      ]
+    command: "-r rise -e masslab --device-id /dev/ttyACM0 --log-level 10"
+    

@@ -3,7 +3,6 @@ Utility tool for connecting MAVlink flight controller to Keelson.
 """
 
 import zenoh
-
 import logging
 import warnings
 import atexit
@@ -17,11 +16,20 @@ from terminal_inputs import terminal_inputs
 
 from keelson.payloads.TimestampedFloat_pb2 import TimestampedFloat
 from keelson.payloads.TimestampedString_pb2 import TimestampedString
-
+from keelson.payloads.ImuReading_pb2 import ImuReading
+from keelson.payloads.Experimental_FlightControllerTelemetry_pb2 import (
+    VFRHUD,
+    RawIMU,
+    AHRS,
+    Vibration,
+    BatteryStatus,
+)
 
 vehicle = None
 sub_rudder_listener = None
 session = None
+
+msg_types = ["VFR_HUD", "RAW_IMU", "AHRS", "VIBRATION", "BATTERY_STATUS"]
 
 
 def query_set_rudder_prc(query):
@@ -30,7 +38,7 @@ def query_set_rudder_prc(query):
 
     """
     global vehicle
-    
+
     key_exp = str(query.selector)
     rudder_id = key_exp.split("/")[5]
     logging.debug(
@@ -193,11 +201,11 @@ def subscriber_engine(data):
 
 
 """
-Arguments: and configurations are set in docker-compose.yml
+Arguments / configurations are set in docker-compose.yml
 """
 if __name__ == "__main__":
+    
     # Input arguments and configurations
-
     args = terminal_inputs()
 
     # Setup logger
@@ -268,9 +276,6 @@ if __name__ == "__main__":
             False,
         )
 
-
-
-
         if args.subscribe:
             # # Setting default subscribers
             key_exp_sub_rudder = keelson.construct_pub_sub_key(
@@ -296,6 +301,7 @@ if __name__ == "__main__":
                 key_exp_sub_engine,
                 subscriber_engine,
             )
+
         #  sub_rudder_listner.undeclare()
 
         ### ENGINE ###
@@ -339,10 +345,158 @@ if __name__ == "__main__":
         #     key_req_rep + "/set_state_of_propulsion_system", query_set_rudder_prc, False
         # )
 
-        # pub = session.declare_publisher(key_base+"/pub1")
+        # VFR_HUD
+        pubkey_vfrhud = keelson.construct_pub_sub_key(
+            realm=args.realm,
+            entity_id=args.entity_id,
+            subject="flight_controller_telemetry_vfrhud",
+            source_id="speedybee",
+        )
+        pub_vfrhud = session.declare_publisher(pubkey_vfrhud)
+        logging.info(f"Decler up TELEMETRY publisher: {pub_vfrhud}")
+
+        # RAW_IMU (OK)
+        pubkey_rawimu = keelson.construct_pub_sub_key(
+            realm=args.realm,
+            entity_id=args.entity_id,
+            subject="flight_controller_telemetry_rawimu",
+            source_id="speedybee",
+        )
+        pub_rawimu = session.declare_publisher(pubkey_rawimu)
+        logging.info(f"Decler up TELEMETRY publisher: {pub_rawimu}")
+        
+        # AHRS (OK)
+        pubkey_ahrs = keelson.construct_pub_sub_key(
+            realm=args.realm,
+            entity_id=args.entity_id,
+            subject="flight_controller_telemetry_ahrs",
+            source_id="speedybee",
+        )
+        pub_ahrs = session.declare_publisher(pubkey_ahrs)
+        logging.info(f"Decler up TELEMETRY publisher: {pub_ahrs}")
+
+        # VIBRATION (OK)
+        pubkey_vibration = keelson.construct_pub_sub_key(
+            realm=args.realm,
+            entity_id=args.entity_id,
+            subject="flight_controller_telemetry_vibration",
+            source_id="speedybee",
+        )
+        pub_vibration = session.declare_publisher(pubkey_vibration)
+        logging.info(f"Decler up TELEMETRY publisher: {pub_vibration}")
+
+        # BATTERY_STATUS (OK)
+        pubkey_battery = keelson.construct_pub_sub_key(
+            realm=args.realm,
+            entity_id=args.entity_id,
+            subject="flight_controller_telemetry_battery",
+            source_id="speedybee",
+        )
+        pub_battery = session.declare_publisher(pubkey_battery)
+        logging.info(f"Decler up TELEMETRY publisher: {pub_ahrs}")
 
         while True:
-            vehicle.check_rc_mode()
+            #################################################
+            # TEST Telemetry
+            #################################################
+
+            for msg_type in msg_types:
+
+                msg = vehicle.get_vehicle().recv_match(
+                    type=msg_type, blocking=True
+                )  # Only selected set of messages
+                # ['VFR_HUD', 'RAW_IMU', 'AHRS', 'VIBRATION', 'BATTERY_STATUS']
+
+                if msg:
+                    logging.debug(f"Telemetry message': {msg}")
+
+                    match msg_type:
+                        case "VFR_HUD":
+                            payload = VFRHUD(
+                                airspeed=msg.airspeed,
+                                groundspeed=msg.groundspeed,
+                                heading=msg.heading,
+                                throttle=msg.throttle,
+                                alt=msg.alt,
+                                climb=msg.climb,
+                            )
+                            # serialize to bytes
+                            serialized_payload = payload.SerializeToString()
+                            envelope = keelson.enclose(serialized_payload)
+                            pub_vfrhud.put(envelope)
+                            logging.info(f"VFR_HUD SENT")
+
+                        case "RAW_IMU":
+                            payload = RawIMU(
+                                time_usec=msg.time_usec,
+                                xacc=msg.xacc,
+                                yacc=msg.yacc,
+                                zacc=msg.zacc,
+                                xgyro=msg.xgyro,
+                                ygyro=msg.ygyro,
+                                zgyro=msg.zgyro,
+                                xmag=msg.xmag,
+                                ymag=msg.ymag,
+                                zmag=msg.zmag,
+                                temperature=msg.temperature,
+                            )
+                            serialized_payload = payload.SerializeToString()
+                            envelope = keelson.enclose(serialized_payload)
+                            pub_rawimu.put(envelope)
+                            logging.info(f"RAW_IMU SENT")
+
+                        case "AHRS":
+                            payload = AHRS(
+                                omegaIx=msg.omegaIx,
+                                omegaIy=msg.omegaIy,
+                                omegaIz=msg.omegaIz,
+                                accel_weight=msg.accel_weight,
+                                renorm_val=msg.renorm_val,
+                                error_rp=msg.error_rp,
+                                error_yaw=msg.error_yaw,
+                            )
+                            serialized_payload = payload.SerializeToString()
+                            envelope = keelson.enclose(serialized_payload)
+                            pub_ahrs.put(envelope)
+                            logging.info(f"AHRS SENT")
+
+                        case "VIBRATION":
+                            payload = Vibration(
+                                vibration_x=msg.vibration_x,
+                                vibration_y=msg.vibration_y,
+                                vibration_z=msg.vibration_z,
+                                clipping_0=msg.clipping_0,
+                                clipping_1=msg.clipping_1,
+                                clipping_2=msg.clipping_2,
+                            )
+                            serialized_payload = payload.SerializeToString()
+                            envelope = keelson.enclose(serialized_payload)
+                            pub_vibration.put(envelope)
+                            logging.info(f"VIBRATION SENT")
+
+                        case "BATTERY_STATUS":
+                            payload = BatteryStatus(
+                                id=msg.id,
+                                battery_function=msg.battery_function,
+                                type=msg.type,
+                                temperature=msg.temperature,
+                                voltages=msg.voltages,
+                                current_battery=msg.current_battery,
+                                current_consumed=msg.current_consumed,
+                                energy_consumed=msg.energy_consumed,
+                                battery_remaining=msg.battery_remaining,
+                                time_remaining=msg.time_remaining,
+                                charge_state=msg.charge_state,
+                                voltages_ext=msg.voltages_ext,
+                                mode=msg.mode,
+                                fault_bitmask=msg.fault_bitmask,
+                            )
+                            serialized_payload = payload.SerializeToString()
+                            envelope = keelson.enclose(serialized_payload)
+                            pub_battery.put(envelope)
+                            logging.info(f"BATTERY_STATUS SENT")
+
+
             time.sleep(0.1)
             # forever loop
 
